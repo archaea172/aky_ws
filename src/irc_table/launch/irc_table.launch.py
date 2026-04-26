@@ -7,7 +7,6 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution, LaunchConfiguration
 
 def generate_launch_description():
-    # for spawn turtlebot3
     use_sim_time = LaunchConfiguration('use_sim_time', default='true')
 
     ros_gz_sim = get_package_share_directory('ros_gz_sim')
