@@ -53,9 +53,9 @@ def generate_launch_description():
     robot_description = {"robot_description": robot_description_content}
     ROBOT_NUM = 20
     GRID_COLUMNS = 5
-    GRID_SPACING = 0.1
+    GRID_SPACING = 0.5
     ROBOT_Z = 0.34
-    world_name = 'plain_world'
+    world_name = 'plane_world'
     gz_twist_type = 'ignition.msgs.Twist'
 
     for i in range(ROBOT_NUM):
