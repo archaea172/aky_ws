@@ -57,6 +57,8 @@ def generate_launch_description():
     ROBOT_Z = 0.01
     world_name = 'plane_world'
     gz_twist_type = 'ignition.msgs.Twist'
+    bridge_arguments = []
+    bridge_remappings = []
 
     for i in range(ROBOT_NUM):
         robot_name = f"robot_{i}"
@@ -93,19 +95,23 @@ def generate_launch_description():
         )
         ld.add_action(spawn_node)
 
-        cmd_vel_bridge = Node(
-            package='ros_gz_bridge',
-            executable='parameter_bridge',
-            namespace=robot_name,
-            name='cmd_vel_bridge',
-            output='screen',
-            arguments=[
-                f'/model/{robot_name}/cmd_vel@geometry_msgs/msg/Twist]{gz_twist_type}',
-            ],
-            remappings=[
-                (f'/model/{robot_name}/cmd_vel', f'/{robot_name}/cmd_vel'),
-            ],
-        )
-        ld.add_action(cmd_vel_bridge)
+        bridge_arguments.extend([
+            f'/model/{robot_name}/cmd_vel@geometry_msgs/msg/Twist]{gz_twist_type}',
+            f'/model/{robot_name}/pose@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V',
+        ])
+        bridge_remappings.extend([
+            (f'/model/{robot_name}/cmd_vel', f'/{robot_name}/cmd_vel'),
+            (f'/model/{robot_name}/pose', '/tf'),
+        ])
+
+    bridge_node = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        name='gz_bridge',
+        output='screen',
+        arguments=bridge_arguments,
+        remappings=bridge_remappings,
+    )
+    ld.add_action(bridge_node)
 
     return ld
