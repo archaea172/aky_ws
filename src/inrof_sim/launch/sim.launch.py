@@ -54,7 +54,7 @@ def generate_launch_description():
     ROBOT_NUM = 20
     GRID_COLUMNS = 5
     GRID_SPACING = 0.5
-    ROBOT_Z = 0.34
+    ROBOT_Z = 0.01
     world_name = 'plane_world'
     gz_twist_type = 'ignition.msgs.Twist'
 
