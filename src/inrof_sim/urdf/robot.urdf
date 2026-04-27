@@ -1,7 +1,25 @@
-<robot name="robot">
+<robot name="robot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:arg name="sim_plugin_prefix" default="gz-sim"/>
+
   <link name="base_root"/>
-  
+
   <link name="base_link">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia
+        ixx="0.0016667" ixy="0.0" ixz="0.0"
+        iyy="0.0016667" iyz="0.0"
+        izz="0.0016667"/>
+    </inertial>
+
+    <collision>
+      <geometry>
+        <box size="0.1 0.1 0.1"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </collision>
+
     <visual>
       <geometry>
         <box size="0.1 0.1 0.1"/>
@@ -18,4 +36,11 @@
     <child  link="base_link"/>
     <origin xyz="0 0 0"/>
   </joint>
+
+  <gazebo>
+    <plugin
+      filename="$(arg sim_plugin_prefix)-velocity-control-system"
+      name="gz::sim::systems::VelocityControl">
+    </plugin>
+  </gazebo>
 </robot>
