@@ -5,10 +5,36 @@ from launch.actions import DeclareLaunchArgument
 from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 
+from ament_index_python.packages import get_package_share_directory
 
 def generate_launch_description():
     ld = LaunchDescription()
+
+    ros_gz_sim = get_package_share_directory('ros_gz_sim')
+    world = os.path.join(
+        get_package_share_directory('inrof_sim'),
+        'worlds',
+        'plane.sdf'
+    )
+
+    gzserver_cmd = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(ros_gz_sim, 'launch', 'gz_sim.launch.py')
+        ),
+        launch_arguments={'gz_args': ['-r -s -v2 ', world], 'on_exit_shutdown': 'true'}.items()
+    )
+    ld.add_action(gzserver_cmd)
+
+    gzclient_cmd = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(ros_gz_sim, 'launch', 'gz_sim.launch.py')
+        ),
+        launch_arguments={'gz_args': '-g -v2 ', 'on_exit_shutdown': 'true'}.items()
+    )
+    ld.add_action(gzclient_cmd)
 
     robot_description_content = Command(
         [
@@ -29,7 +55,8 @@ def generate_launch_description():
     GRID_COLUMNS = 5
     GRID_SPACING = 0.1
     ROBOT_Z = 0.34
-    gz_twist_type = 'ignition.msgs.Twist' if os.environ.get('ROS_DISTRO') == 'humble' else 'gz.msgs.Twist'
+    world_name = 'plain_world'
+    gz_twist_type = 'ignition.msgs.Twist'
 
     for i in range(ROBOT_NUM):
         robot_name = f"robot_{i}"
@@ -49,8 +76,6 @@ def generate_launch_description():
             ],
         )
         ld.add_action(robot_node)
-
-        world_name = 'plain_world'
 
         spawn_node = Node(
             package='ros_gz_sim',
