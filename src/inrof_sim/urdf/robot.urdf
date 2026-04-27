@@ -1,7 +1,7 @@
 <robot name="robot" xmlns:xacro="http://www.ros.org/wiki/xacro">
   <xacro:arg name="sim_plugin_prefix" default="gz-sim"/>
 
-  <link name="base_root"/>
+  <link name="base_footprint"/>
 
   <link name="base_link">
     <inertial>
@@ -32,26 +32,22 @@
   </link>
 
   <joint name="body_joint" type="fixed">
-    <parent link="base_root"/>
+    <parent link="base_footprint"/>
     <child  link="base_link"/>
     <origin xyz="0 0 0"/>
   </joint>
 
   <gazebo>
-    <plugin
-      filename="$(arg sim_plugin_prefix)-velocity-control-system"
-      name="gz::sim::systems::VelocityControl">
+    <plugin filename="libignition-gazebo-velocity-control-system.so"
+            name="ignition::gazebo::systems::VelocityControl">
     </plugin>
-    <plugin
-      filename="$(arg sim_plugin_prefix)-pose-publisher-system"
-      name="gz::sim::systems::PosePublisher">
-      <publish_model_pose>true</publish_model_pose>
-      <publish_link_pose>true</publish_link_pose>
-      <publish_collision_pose>false</publish_collision_pose>
-      <publish_visual_pose>false</publish_visual_pose>
-      <publish_nested_model_pose>false</publish_nested_model_pose>
-      <publish_sensor_pose>false</publish_sensor_pose>
-      <use_pose_vector_msg>true</use_pose_vector_msg>
+    <plugin filename="libignition-gazebo-odometry-publisher-system.so"
+          name="ignition::gazebo::systems::OdometryPublisher">
+
+    <odom_frame>odom</odom_frame>
+    <odom_publish_frequency>10</odom_publish_frequency>
+    <dimensions>2</dimensions>
+    <gaussian_noise>0.0</gaussian_noise>
     </plugin>
   </gazebo>
 </robot>

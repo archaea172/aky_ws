@@ -97,11 +97,13 @@ def generate_launch_description():
 
         bridge_arguments.extend([
             f'/model/{robot_name}/cmd_vel@geometry_msgs/msg/Twist]{gz_twist_type}',
-            f'/model/{robot_name}/pose@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V',
+            f'/model/{robot_name}/pose@tf2_msgs/msg/TFMessage[ignition.msgs.Pose_V',
+            # f'/model/{robot_name}/odometry@nav_msgs/msg/Odometry[ignition.msgs.Odometry',
         ])
         bridge_remappings.extend([
             (f'/model/{robot_name}/cmd_vel', f'/{robot_name}/cmd_vel'),
-            (f'/model/{robot_name}/pose', '/tf'),
+            (f'/model/{robot_name}/pose', f'/{robot_name}/pose'),
+            (f'/model/{robot_name}/odometry', f'/{robot_name}/odometry'),
         ])
 
     bridge_node = Node(
