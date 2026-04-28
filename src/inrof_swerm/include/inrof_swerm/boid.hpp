@@ -20,11 +20,20 @@ protected:
 private:
     void odom_callback(int id, nav_msgs::msg::Odometry::ConstSharedPtr rxdata);
     void control_callback();
+    Eigen::Vector2d make_separation_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j);
+    Eigen::Vector2d make_alignment_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j, const Eigen::MatrixXd& v_j);
+    Eigen::Vector2d make_gravity_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j);
 
     int boid_num_;
     double max_vel_;
     Eigen::MatrixXd pos_matrix_;
     Eigen::MatrixXd vel_matrix_;
+
+    double k_separation;
+    double k_alignment;
+    double k_gravity;
+    double Ir;
+    double Ir_2;
     
     std::vector<nav_msgs::msg::Odometry> odoms_;
     std::vector<rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr> cmd_vel_publishers_;

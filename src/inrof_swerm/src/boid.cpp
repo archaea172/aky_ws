@@ -73,6 +73,82 @@ void boid_node::control_callback()
     }
 }
 
+Eigen::Vector2d boid_node::make_separation_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j)
+{
+    Eigen::Vector2d sum = Eigen::Vector2d::Zero();
+    int in_num = 0;
+    # pragma omp parallel for
+    for (size_t i = 0; i < x_j.cols(); i++) 
+    {
+        Eigen::Vector2d i_j_diff = x_i - x_j.col(i);
+        double D_square = i_j_diff.squaredNorm();
+        if (Ir_2 > D_square) 
+        {
+            Eigen::Vector2d posVD_i = i_j_diff / pow(D_square, 1.5);
+            sum += posVD_i;
+            in_num++;
+        }
+    }
+
+    Eigen::Vector2d vel;
+    vel << 0, 0;
+
+    if (in_num != 0) vel = sum / in_num;
+
+    return vel;
+}
+
+Eigen::Vector2d boid_node::make_alignment_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j, const Eigen::MatrixXd& v_j)
+{
+    Eigen::Vector2d sum = Eigen::Vector2d::Zero();
+    int in_num = 0;
+    # pragma omp parallel for
+    for (size_t i = 0; i < x_j.cols(); i++) 
+    {
+        Eigen::Vector2d i_j_diff = x_i - x_j.col(i);
+        double D_square = i_j_diff.squaredNorm();
+        if (Ir_2 > D_square) 
+        {
+            double velVN = v_j.col(i).norm();
+            Eigen::Vector2d velD = v_j.col(i) / std::max(velVN, 1.0);
+            sum += velD;
+            in_num++;
+        }
+    }
+
+    Eigen::Vector2d vel;
+    vel << 0, 0;
+
+    if (in_num != 0) vel = sum / in_num;
+
+    return -vel;
+}
+
+Eigen::Vector2d boid_node::make_gravity_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j)
+{
+    Eigen::Vector2d sum = Eigen::Vector2d::Zero();
+    int in_num = 0;
+    # pragma omp parallel for
+    for (size_t i = 0; i < x_j.cols(); i++) 
+    {
+        Eigen::Vector2d i_j_diff = x_i - x_j.col(i);
+        double D_square = i_j_diff.squaredNorm();
+        if (Ir_2 > D_square) 
+        {
+            double use_d = std::max(sqrt(D_square), 1.0);
+            sum += i_j_diff / use_d;
+            in_num++;
+        }
+    }
+
+    Eigen::Vector2d vel;
+    vel << 0, 0;
+
+    if (in_num != 0) vel = sum / in_num;
+
+    return vel;
+}
+
 Eigen::MatrixXd boid_node::update_vel()
 {
 
