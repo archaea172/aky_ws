@@ -40,7 +40,7 @@ boid_node::boid_node()
     this->control_timer_ = rclcpp::create_timer(
         this,
         this->get_clock(),
-        10ms,
+        50ms,
         std::bind(&boid_node::control_callback, this)
     );
 }
@@ -57,4 +57,18 @@ void boid_node::odom_callback(int id, nav_msgs::msg::Odometry::ConstSharedPtr rx
 
     this->pos_matrix_.col(id) << rxdata->pose.pose.position.x, rxdata->pose.pose.position.y;
     this->vel_matrix_.col(id) << rxdata->twist.twist.linear.x, rxdata->twist.twist.linear.y;
+}
+
+void boid_node::control_callback()
+{
+    Eigen::MatrixXd cmd_vels = this->update_vel();
+
+    for (int i = 0; i < this->boid_num_; ++i)
+    {
+        geometry_msgs::msg::Twist txdata;
+        txdata.linear.x = cmd_vels(0, i);
+        txdata.linear.y = cmd_vels(1, i);
+
+        this->cmd_vel_publishers_[i]->publish(txdata);
+    }
 }

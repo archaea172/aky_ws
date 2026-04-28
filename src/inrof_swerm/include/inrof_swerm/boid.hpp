@@ -13,6 +13,10 @@ class boid_node
 {
 public:
     boid_node();
+
+protected:
+    Eigen::MatrixXd update_vel();
+
 private:
     void odom_callback(int id, nav_msgs::msg::Odometry::ConstSharedPtr rxdata);
     void control_callback();
