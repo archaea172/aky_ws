@@ -15,7 +15,7 @@ public:
     boid_node();
 
 protected:
-    Eigen::MatrixXd update_vel();
+    Eigen::MatrixXd update_vels();
 
 private:
     void odom_callback(int id, nav_msgs::msg::Odometry::ConstSharedPtr rxdata);
@@ -23,6 +23,7 @@ private:
     Eigen::Vector2d make_separation_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j);
     Eigen::Vector2d make_alignment_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j, const Eigen::MatrixXd& v_j);
     Eigen::Vector2d make_gravity_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j);
+    Eigen::MatrixXd remove_col(const Eigen::MatrixXd& A, int k);
 
     int boid_num_;
     double max_vel_;

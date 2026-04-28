@@ -61,7 +61,7 @@ void boid_node::odom_callback(int id, nav_msgs::msg::Odometry::ConstSharedPtr rx
 
 void boid_node::control_callback()
 {
-    Eigen::MatrixXd cmd_vels = this->update_vel();
+    Eigen::MatrixXd cmd_vels = this->update_vels();
 
     for (int i = 0; i < this->boid_num_; ++i)
     {
@@ -149,9 +149,30 @@ Eigen::Vector2d boid_node::make_gravity_power(const Eigen::Vector2d& x_i, const 
     return vel;
 }
 
-Eigen::MatrixXd boid_node::update_vel()
+Eigen::MatrixXd boid_node::update_vels()
 {
+    Eigen::MatrixXd cmd_vels(2, this->boid_num_);
+    # pragma omp parallel for
+    for (int i = 0; i < this->boid_num_; ++i)
+    {
+        Eigen::Vector2d x_i = this->pos_matrix_.col(i);
+        Eigen::MatrixXd x_j = this->remove_col(this->pos_matrix_, i);
+        Eigen::MatrixXd v_j = this->remove_col(this->vel_matrix_, i);
+        cmd_vels.col(i) = 
+            this->k_separation * this->make_separation_power(x_i, x_j) +
+            this->k_alignment * this->make_alignment_power(x_i, x_j, v_j) +
+            this->k_gravity * this->make_gravity_power(x_i, x_j);
+    }
 
+    return cmd_vels;
+}
+
+Eigen::MatrixXd boid_node::remove_col(const Eigen::MatrixXd& A, int k)
+{
+    Eigen::MatrixXd B(A.rows(), A.cols() - 1);
+    B.leftCols(k) = A.leftCols(k);
+    B.rightCols(A.cols() - k - 1) = A.rightCols(A.cols() - k - 1);
+    return B;
 }
 
 int main(int argc, char *argv[])
