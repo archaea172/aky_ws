@@ -35,6 +35,8 @@ private:
     double k_gravity;
     double Ir;
     double Ir_2;
+    double Ir_min;
+    double Ir_min_2;
     
     std::vector<nav_msgs::msg::Odometry> odoms_;
     std::vector<rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr> cmd_vel_publishers_;

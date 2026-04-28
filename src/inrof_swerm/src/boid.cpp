@@ -5,8 +5,23 @@ using namespace std::chrono_literals;
 boid_node::boid_node()
 : rclcpp::Node("boid")
 {
-    this->declare_parameter<int>("boid_num");
+    this->declare_parameter<int>("boid_num", 20);
     this->boid_num_ = this->get_parameter("boid_num").as_int();
+    this->declare_parameter<double>("max_vel", 0.05);
+    this->max_vel_ = this->get_parameter("max_vel").as_double();
+    this->declare_parameter<double>("Ir", 100);
+    this->Ir = this->get_parameter("Ir").as_double();
+    this->declare_parameter<double>("Ir_min", 0.01);
+    this->Ir_min = this->get_parameter("Ir_min").as_double();
+    this->declare_parameter<double>("k_separation", 20.0);
+    this->declare_parameter<double>("k_alignment", 1.1);
+    this->declare_parameter<double>("k_gravity", 0.5);
+    this->k_separation = this->get_parameter("k_separation").as_double();
+    this->k_alignment = this->get_parameter("k_alignment").as_double();
+    this->k_gravity = this->get_parameter("k_gravity").as_double();
+    
+    this->Ir_2 = std::pow(this->Ir, 2);
+    this->Ir_min_2 = std::pow(this->Ir_min, 2);
 
     rclcpp::QoS device = rclcpp::QoS(rclcpp::KeepLast(10))
         .reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE)
@@ -34,8 +49,8 @@ boid_node::boid_node()
     }
 
     this->odoms_.resize(this->boid_num_);
-    this->pos_matrix_.resize(2, this->boid_num_);
-    this->vel_matrix_.resize(2, this->boid_num_);
+    this->pos_matrix_ = Eigen::MatrixXd::Zero(2, this->boid_num_);
+    this->vel_matrix_ = Eigen::MatrixXd::Zero(2, this->boid_num_);
 
     this->control_timer_ = rclcpp::create_timer(
         this,
@@ -77,12 +92,11 @@ Eigen::Vector2d boid_node::make_separation_power(const Eigen::Vector2d& x_i, con
 {
     Eigen::Vector2d sum = Eigen::Vector2d::Zero();
     int in_num = 0;
-    # pragma omp parallel for
-    for (size_t i = 0; i < x_j.cols(); i++) 
+    for (size_t i = 0; i < (size_t)x_j.cols(); i++) 
     {
         Eigen::Vector2d i_j_diff = x_i - x_j.col(i);
         double D_square = i_j_diff.squaredNorm();
-        if (Ir_2 > D_square) 
+        if (Ir_2 > D_square && D_square > Ir_min_2) 
         {
             Eigen::Vector2d posVD_i = i_j_diff / pow(D_square, 1.5);
             sum += posVD_i;
@@ -102,12 +116,11 @@ Eigen::Vector2d boid_node::make_alignment_power(const Eigen::Vector2d& x_i, cons
 {
     Eigen::Vector2d sum = Eigen::Vector2d::Zero();
     int in_num = 0;
-    # pragma omp parallel for
-    for (size_t i = 0; i < x_j.cols(); i++) 
+    for (size_t i = 0; i < (size_t)x_j.cols(); i++) 
     {
         Eigen::Vector2d i_j_diff = x_i - x_j.col(i);
         double D_square = i_j_diff.squaredNorm();
-        if (Ir_2 > D_square) 
+        if (Ir_2 > D_square && D_square > Ir_min_2) 
         {
             double velVN = v_j.col(i).norm();
             Eigen::Vector2d velD = v_j.col(i) / std::max(velVN, 1.0);
@@ -121,19 +134,18 @@ Eigen::Vector2d boid_node::make_alignment_power(const Eigen::Vector2d& x_i, cons
 
     if (in_num != 0) vel = sum / in_num;
 
-    return -vel;
+    return vel;
 }
 
 Eigen::Vector2d boid_node::make_gravity_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j)
 {
     Eigen::Vector2d sum = Eigen::Vector2d::Zero();
     int in_num = 0;
-    # pragma omp parallel for
-    for (size_t i = 0; i < x_j.cols(); i++) 
+    for (size_t i = 0; i < (size_t)x_j.cols(); i++) 
     {
         Eigen::Vector2d i_j_diff = x_i - x_j.col(i);
         double D_square = i_j_diff.squaredNorm();
-        if (Ir_2 > D_square) 
+        if (Ir_2 > D_square && D_square > Ir_min_2) 
         {
             double use_d = std::max(sqrt(D_square), 1.0);
             sum += i_j_diff / use_d;
@@ -146,22 +158,29 @@ Eigen::Vector2d boid_node::make_gravity_power(const Eigen::Vector2d& x_i, const 
 
     if (in_num != 0) vel = sum / in_num;
 
-    return vel;
+    return -vel;
 }
 
 Eigen::MatrixXd boid_node::update_vels()
 {
     Eigen::MatrixXd cmd_vels(2, this->boid_num_);
-    # pragma omp parallel for
     for (int i = 0; i < this->boid_num_; ++i)
     {
         Eigen::Vector2d x_i = this->pos_matrix_.col(i);
         Eigen::MatrixXd x_j = this->remove_col(this->pos_matrix_, i);
         Eigen::MatrixXd v_j = this->remove_col(this->vel_matrix_, i);
-        cmd_vels.col(i) = 
+        Eigen::Vector2d cmd_vel_i = 
             this->k_separation * this->make_separation_power(x_i, x_j) +
             this->k_alignment * this->make_alignment_power(x_i, x_j, v_j) +
             this->k_gravity * this->make_gravity_power(x_i, x_j);
+
+        double cmd_vel_norm = cmd_vel_i.norm();
+        if (cmd_vel_norm > this->max_vel_)
+        {
+            cmd_vel_i *= this->max_vel_ / cmd_vel_norm;
+        }
+
+        cmd_vels.col(i) = cmd_vel_i;
     }
 
     return cmd_vels;
