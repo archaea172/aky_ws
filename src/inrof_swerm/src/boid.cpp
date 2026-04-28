@@ -14,13 +14,25 @@ boid_node::boid_node()
 
     this->cmd_vel_publishers_.reserve(this->boid_num_);
     for (int i = 0; i < this->boid_num_; ++i)
-    this->cmd_vel_publishers_.push_back(
-        this->create_publisher<geometry_msgs::msg::Twist>(
-            "robot_" + std::to_string(i) + "/cmd_vel",
-            device
-        )
-    );
+    {
+        this->cmd_vel_publishers_.push_back(
+            this->create_publisher<geometry_msgs::msg::Twist>(
+                "robot_" + std::to_string(i) + "/cmd_vel",
+                device
+            )
+        );
 
+        this->odom_subscribers_.push_back(
+            this->create_subscription<nav_msgs::msg::Odometry>(
+                "robot_" + std::to_string(i) + "/odometry",
+                device,
+                [this, i](nav_msgs::msg::Odometry::ConstSharedPtr rxdata) {
+                    this->odom_callback(i, rxdata);
+                }
+            )
+        );
+    }
+    
     this->control_timer_ = rclcpp::create_timer(
         this,
         this->get_clock(),
