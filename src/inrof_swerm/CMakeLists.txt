@@ -7,9 +7,34 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(rclcpp REQUIRED)
+
+include_directories(
+  include
+  include/${PROJECT_NAME}
+)
+
+add_executable(boid_node
+  src/boid.cpp
+)
+
+ament_target_dependencies(boid_node
+  rclcpp
+  geometry_msgs
+  nav_msgs
+)
+
+install(
+  TARGETS boid_node
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(
+  DIRECTORY config
+  DESTINATION share/${PROJECT_NAME}
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
