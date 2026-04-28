@@ -161,6 +161,14 @@ Eigen::Vector2d boid_node::make_gravity_power(const Eigen::Vector2d& x_i, const 
     return -vel;
 }
 
+Eigen::Vector2d boid_node::make_base_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j, const Eigen::MatrixXd& v_j)
+{
+    return
+        this->k_separation * this->make_separation_power(x_i, x_j) +
+        this->k_alignment * this->make_alignment_power(x_i, x_j, v_j) +
+        this->k_gravity * this->make_gravity_power(x_i, x_j);
+}
+
 Eigen::MatrixXd boid_node::update_vels()
 {
     Eigen::MatrixXd cmd_vels(2, this->boid_num_);
@@ -169,10 +177,7 @@ Eigen::MatrixXd boid_node::update_vels()
         Eigen::Vector2d x_i = this->pos_matrix_.col(i);
         Eigen::MatrixXd x_j = this->remove_col(this->pos_matrix_, i);
         Eigen::MatrixXd v_j = this->remove_col(this->vel_matrix_, i);
-        Eigen::Vector2d cmd_vel_i = 
-            this->k_separation * this->make_separation_power(x_i, x_j) +
-            this->k_alignment * this->make_alignment_power(x_i, x_j, v_j) +
-            this->k_gravity * this->make_gravity_power(x_i, x_j);
+        Eigen::Vector2d cmd_vel_i = this->make_base_power(x_i, x_j, v_j);
 
         double cmd_vel_norm = cmd_vel_i.norm();
         if (cmd_vel_norm > this->max_vel_)

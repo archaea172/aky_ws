@@ -16,6 +16,7 @@ public:
 
 protected:
     Eigen::MatrixXd update_vels();
+    Eigen::Vector2d make_base_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j, const Eigen::MatrixXd& v_j);
 
 private:
     void odom_callback(int id, nav_msgs::msg::Odometry::ConstSharedPtr rxdata);
