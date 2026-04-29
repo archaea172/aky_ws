@@ -49,6 +49,7 @@ boid_node::boid_node()
     }
 
     this->odoms_.resize(this->boid_num_);
+    this->odom_received_.assign(this->boid_num_, false);
     this->pos_matrix_ = Eigen::MatrixXd::Zero(2, this->boid_num_);
     this->vel_matrix_ = Eigen::MatrixXd::Zero(2, this->boid_num_);
 
@@ -62,10 +63,17 @@ boid_node::boid_node()
 
 void boid_node::odom_callback(int id, nav_msgs::msg::Odometry::ConstSharedPtr rxdata)
 {
-    if (id > this->boid_num_)
+    if (id < 0 || id >= this->boid_num_)
     {
         RCLCPP_ERROR(this->get_logger(), "id is invalid. please check robot num");
         return;
+    }
+
+    if (!this->odom_received_[id])
+    {
+        this->odom_received_[id] = true;
+        ++this->received_odom_count_;
+        this->is_ready = this->received_odom_count_ == this->boid_num_;
     }
 
     this->odoms_[id] = *rxdata;
@@ -76,6 +84,8 @@ void boid_node::odom_callback(int id, nav_msgs::msg::Odometry::ConstSharedPtr rx
 
 void boid_node::control_callback()
 {
+    if (!this->is_ready) return;
+
     Eigen::MatrixXd cmd_vels = this->update_vels();
 
     for (int i = 0; i < this->boid_num_; ++i)
@@ -171,6 +181,7 @@ Eigen::Vector2d boid_node::make_base_power(const Eigen::Vector2d& x_i, const Eig
 
 Eigen::MatrixXd boid_node::update_vels()
 {
+    if (!this->is_ready) return Eigen::MatrixXd::Zero(2, this->boid_num_);
     Eigen::MatrixXd cmd_vels(2, this->boid_num_);
     for (int i = 0; i < this->boid_num_; ++i)
     {

@@ -7,6 +7,7 @@
 #include "geometry_msgs/msg/twist.hpp"
 
 #include <Eigen/Dense>
+#include <vector>
 
 class boid_node
 : public rclcpp::Node
@@ -43,4 +44,8 @@ private:
     std::vector<rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr> cmd_vel_publishers_;
     std::vector<rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr> odom_subscribers_;
     rclcpp::TimerBase::SharedPtr control_timer_;
+
+    std::vector<char> odom_received_;
+    int received_odom_count_{0};
+    bool is_ready{false};
 };
