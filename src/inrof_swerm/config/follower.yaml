@@ -1,0 +1,10 @@
+boid:
+  ros__parameters:
+    boid_num: 20
+    max_vel: 0.05
+    Ir: 100.0
+    Ir_min: 0.01
+    k_separation: 20.0
+    k_alignment: 1.1
+    k_gravity: 0.5
+    k_follow: 20.0

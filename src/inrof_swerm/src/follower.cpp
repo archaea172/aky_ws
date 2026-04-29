@@ -27,7 +27,7 @@ Eigen::Vector2d Follower::make_follow_power(const Eigen::Vector2d& x_i, const Ei
 {
     Eigen::Vector2d l_i_diff = x_l - x_i;
 
-    return l_i_diff / l_i_diff.norm();
+    return l_i_diff / std::max(l_i_diff.norm(), 0.01);
 }
 
 Eigen::MatrixXd Follower::update_vels()
