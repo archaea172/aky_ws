@@ -199,6 +199,7 @@ Eigen::MatrixXd boid_node::remove_col(const Eigen::MatrixXd& A, int k)
     return B;
 }
 
+#ifndef INROF_SWERM_BOID_NODE_LIBRARY_ONLY
 int main(int argc, char *argv[])
 {
     rclcpp::init(argc, argv);
@@ -207,3 +208,4 @@ int main(int argc, char *argv[])
     rclcpp::shutdown();
     return 0;
 }
+#endif

@@ -37,6 +37,30 @@ install(
   DESTINATION lib/${PROJECT_NAME}
 )
 
+add_executable(follower_node
+  src/follower.cpp
+  src/boid.cpp
+)
+
+ament_target_dependencies(follower_node
+  rclcpp
+  geometry_msgs
+  nav_msgs
+)
+
+target_link_libraries(follower_node
+  Eigen3::Eigen
+)
+
+target_compile_definitions(follower_node
+  PRIVATE INROF_SWERM_BOID_NODE_LIBRARY_ONLY
+)
+
+install(
+  TARGETS follower_node
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 install(
   DIRECTORY config
   DESTINATION share/${PROJECT_NAME}

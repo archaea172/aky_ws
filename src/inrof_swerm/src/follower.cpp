@@ -12,6 +12,8 @@ Follower::Follower()
         device,
         std::bind(&Follower::leader_odom_callback, this, std::placeholders::_1)
     );
+    this->declare_parameter<double>("k_follow", 0.5);
+    this->k_follow_ = this->get_parameter("k_follow").as_double();
 }
 
 void Follower::leader_odom_callback(nav_msgs::msg::Odometry::ConstSharedPtr rxdata)
@@ -48,4 +50,13 @@ Eigen::MatrixXd Follower::update_vels()
     }
 
     return cmd_vels;
+}
+
+int main(int argc, char *argv[])
+{
+    rclcpp::init(argc, argv);
+    std::shared_ptr<Follower> node = std::make_shared<Follower>();
+    rclcpp::spin(node->get_node_base_interface());
+    rclcpp::shutdown();
+    return 0;
 }
