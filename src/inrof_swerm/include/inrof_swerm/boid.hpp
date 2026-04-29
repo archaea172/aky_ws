@@ -15,17 +15,9 @@ public:
     boid_node();
 
 protected:
-    Eigen::MatrixXd update_vels();
+    virtual Eigen::MatrixXd update_vels();
     Eigen::Vector2d make_base_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j, const Eigen::MatrixXd& v_j);
-
-private:
-    void odom_callback(int id, nav_msgs::msg::Odometry::ConstSharedPtr rxdata);
-    void control_callback();
-    Eigen::Vector2d make_separation_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j);
-    Eigen::Vector2d make_alignment_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j, const Eigen::MatrixXd& v_j);
-    Eigen::Vector2d make_gravity_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j);
     Eigen::MatrixXd remove_col(const Eigen::MatrixXd& A, int k);
-
     int boid_num_;
     double max_vel_;
     Eigen::MatrixXd pos_matrix_;
@@ -40,6 +32,14 @@ private:
     double Ir_min_2;
     
     std::vector<nav_msgs::msg::Odometry> odoms_;
+
+private:
+    void odom_callback(int id, nav_msgs::msg::Odometry::ConstSharedPtr rxdata);
+    void control_callback();
+    Eigen::Vector2d make_separation_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j);
+    Eigen::Vector2d make_alignment_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j, const Eigen::MatrixXd& v_j);
+    Eigen::Vector2d make_gravity_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j);
+
     std::vector<rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr> cmd_vel_publishers_;
     std::vector<rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr> odom_subscribers_;
     rclcpp::TimerBase::SharedPtr control_timer_;
