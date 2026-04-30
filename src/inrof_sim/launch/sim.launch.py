@@ -83,7 +83,7 @@ def generate_launch_description():
         output='screen',
         parameters=[
             {'robot_description': leader_description_content},
-            {'frame_prefix': "/leader/"},
+            {'frame_prefix': "leader/"},
         ],
     )
     ld.add_action(robot_leader_node)
@@ -106,18 +106,18 @@ def generate_launch_description():
 
     bridge_arguments.extend([
         f'/model/leader/cmd_vel@geometry_msgs/msg/Twist]{gz_twist_type}',
-        f'/model/leader/pose@tf2_msgs/msg/TFMessage[ignition.msgs.Pose_V',
+        f'/model/leader/tf@tf2_msgs/msg/TFMessage[ignition.msgs.Pose_V',
         f'/model/leader/odometry@nav_msgs/msg/Odometry[ignition.msgs.Odometry',
     ])
     bridge_remappings.extend([
         (f'/model/leader/cmd_vel', f'/leader/cmd_vel'),
-        (f'/model/leader/pose', f'/leader/pose'),
+        (f'/model/leader/tf', '/tf'),
         (f'/model/leader/odometry', f'/leader/odometry'),
     ])
 
     for i in range(ROBOT_NUM):
         robot_name = f"robot_{i}"
-        frame_prefix = f"/{robot_name}/"
+        frame_prefix = f"{robot_name}/"
         x = (i % GRID_COLUMNS) * GRID_SPACING
         y = (i // GRID_COLUMNS) * GRID_SPACING
 
@@ -157,7 +157,7 @@ def generate_launch_description():
         ])
         bridge_remappings.extend([
             (f'/model/{robot_name}/cmd_vel', f'/{robot_name}/cmd_vel'),
-            (f'/model/{robot_name}/pose', f'/{robot_name}/pose'),
+            (f'/model/{robot_name}/pose', '/tf'),
             (f'/model/{robot_name}/odometry', f'/{robot_name}/odometry'),
         ])
 
