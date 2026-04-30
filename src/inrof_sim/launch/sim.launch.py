@@ -34,7 +34,7 @@ def generate_launch_description():
         ),
         launch_arguments={'gz_args': '-g -v2 ', 'on_exit_shutdown': 'true'}.items()
     )
-    # ld.add_action(gzclient_cmd)
+    ld.add_action(gzclient_cmd)
 
     robot_description_content = Command(
         [
@@ -54,12 +54,27 @@ def generate_launch_description():
     ROBOT_NUM = 20
     GRID_COLUMNS = 5
     GRID_SPACING = 0.5
-    ROBOT_Z = 0.01
+    ROBOT_Z = 0.05
     world_name = 'plane_world'
     gz_twist_type = 'ignition.msgs.Twist'
     bridge_arguments = []
     bridge_remappings = []
 
+
+    leader_description_content = Command(
+        [
+            PathJoinSubstitution([FindExecutable(name="xacro")]),
+            " ",
+            PathJoinSubstitution(
+                [
+                    FindPackageShare("inrof_sim"),
+                    "urdf",
+                    "leader.urdf",
+                ]
+            ),
+            " ",
+        ]
+    )
     robot_leader_node = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
@@ -67,8 +82,8 @@ def generate_launch_description():
         name='robot_state_publisher',
         output='screen',
         parameters=[
-            robot_description,
-            {'frame_prefix': "leader"},
+            {'robot_description': leader_description_content},
+            {'frame_prefix': "/leader/"},
         ],
     )
     ld.add_action(robot_leader_node)
@@ -80,7 +95,7 @@ def generate_launch_description():
         output='screen',
         arguments=[
             '-world', world_name,
-            '-string', robot_description_content,
+            '-string', leader_description_content,
             '-name', "leader",
             '-x', "4.0",
             '-y', "4.0",
@@ -102,7 +117,7 @@ def generate_launch_description():
 
     for i in range(ROBOT_NUM):
         robot_name = f"robot_{i}"
-        frame_prefix = f"{robot_name}/"
+        frame_prefix = f"/{robot_name}/"
         x = (i % GRID_COLUMNS) * GRID_SPACING
         y = (i // GRID_COLUMNS) * GRID_SPACING
 
