@@ -13,7 +13,7 @@ class boid_node
 : public rclcpp::Node
 {
 public:
-    boid_node();
+    boid_node(Eigen::MatrixXd wall_matrix = Eigen::MatrixXd{});
 
 protected:
     virtual Eigen::MatrixXd update_vels();
@@ -24,9 +24,12 @@ protected:
     Eigen::MatrixXd pos_matrix_;
     Eigen::MatrixXd vel_matrix_;
 
+    Eigen::MatrixXd wall_matrix_;
+
     double k_separation;
     double k_alignment;
     double k_gravity;
+    double k_wall;
     double Ir;
     double Ir_2;
     double Ir_min;
@@ -40,6 +43,7 @@ private:
     Eigen::Vector2d make_separation_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j);
     Eigen::Vector2d make_alignment_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j, const Eigen::MatrixXd& v_j);
     Eigen::Vector2d make_gravity_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j);
+    Eigen::Vector2d make_wall_power(const Eigen::Vector2d& x_i);
 
     std::vector<rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr> cmd_vel_publishers_;
     std::vector<rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr> odom_subscribers_;

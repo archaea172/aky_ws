@@ -11,7 +11,7 @@ class Sheep
 : public boid_node
 {
 public:
-    Sheep();
+    Sheep(Eigen::MatrixXd wall_matrix = Eigen::MatrixXd{});
 
 private:
     void dog_odom_callback(nav_msgs::msg::Odometry::ConstSharedPtr rxdata);
@@ -23,4 +23,6 @@ private:
     Eigen::Vector2d dog_pos_;
     Eigen::Vector2d dog_vel_;
     double k_run_;
+
+    Eigen::MatrixXd wall_matrix_;
 };

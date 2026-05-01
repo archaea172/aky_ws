@@ -11,7 +11,7 @@ class Follower
 : public boid_node
 {
 public:
-    Follower();
+    Follower(Eigen::MatrixXd wall_matrix = Eigen::MatrixXd{});
 
 private:
     void leader_odom_callback(nav_msgs::msg::Odometry::ConstSharedPtr rxdata);
@@ -23,4 +23,6 @@ private:
     Eigen::Vector2d leader_pos_;
     Eigen::Vector2d leader_vel_;
     double k_follow_;
+
+    Eigen::MatrixXd wall_matrix_;
 };

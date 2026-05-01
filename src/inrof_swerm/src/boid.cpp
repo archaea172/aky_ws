@@ -2,8 +2,8 @@
 
 using namespace std::chrono_literals;
 
-boid_node::boid_node()
-: rclcpp::Node("boid")
+boid_node::boid_node(Eigen::MatrixXd wall_matrix)
+: rclcpp::Node("boid"), wall_matrix_(wall_matrix)
 {
     this->declare_parameter<int>("boid_num", 20);
     this->boid_num_ = this->get_parameter("boid_num").as_int();
@@ -16,9 +16,11 @@ boid_node::boid_node()
     this->declare_parameter<double>("k_separation", 20.0);
     this->declare_parameter<double>("k_alignment", 1.1);
     this->declare_parameter<double>("k_gravity", 0.5);
+    this->declare_parameter<double>("k_wall", 20.0);
     this->k_separation = this->get_parameter("k_separation").as_double();
     this->k_alignment = this->get_parameter("k_alignment").as_double();
     this->k_gravity = this->get_parameter("k_gravity").as_double();
+    this->k_wall = this->get_parameter("k_wall").as_double();
     
     this->Ir_2 = std::pow(this->Ir, 2);
     this->Ir_min_2 = std::pow(this->Ir_min, 2);
@@ -171,12 +173,37 @@ Eigen::Vector2d boid_node::make_gravity_power(const Eigen::Vector2d& x_i, const 
     return -vel;
 }
 
+Eigen::Vector2d boid_node::make_wall_power(const Eigen::Vector2d& x_i)
+{
+    Eigen::Vector2d sum = Eigen::Vector2d::Zero();
+    int in_num = 0;
+    for (size_t i = 0; i < (size_t)this->wall_matrix_.cols(); i++) 
+    {
+        Eigen::Vector2d i_j_diff = x_i - this->wall_matrix_.col(i);
+        double D_square = i_j_diff.squaredNorm();
+        if (Ir_2 > D_square && D_square > Ir_min_2) 
+        {
+            Eigen::Vector2d posVD_i = i_j_diff / pow(D_square, 1.5);
+            sum += posVD_i;
+            in_num++;
+        }
+    }
+
+    Eigen::Vector2d vel;
+    vel << 0, 0;
+
+    if (in_num != 0) vel = sum / in_num;
+
+    return vel;
+}
+
 Eigen::Vector2d boid_node::make_base_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j, const Eigen::MatrixXd& v_j)
 {
     return
         this->k_separation * this->make_separation_power(x_i, x_j) +
         this->k_alignment * this->make_alignment_power(x_i, x_j, v_j) +
-        this->k_gravity * this->make_gravity_power(x_i, x_j);
+        this->k_gravity * this->make_gravity_power(x_i, x_j) +
+        this->k_wall * this->make_wall_power(x_i);
 }
 
 Eigen::MatrixXd boid_node::update_vels()

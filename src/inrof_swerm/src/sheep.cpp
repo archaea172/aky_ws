@@ -1,7 +1,7 @@
 #include "sheep.hpp"
 
-Sheep::Sheep()
-: boid_node()
+Sheep::Sheep(Eigen::MatrixXd wall_matrix)
+: boid_node(wall_matrix)
 {
     rclcpp::QoS device = rclcpp::QoS(rclcpp::KeepLast(10))
         .reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE)
