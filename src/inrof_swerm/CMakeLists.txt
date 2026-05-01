@@ -61,6 +61,30 @@ install(
   DESTINATION lib/${PROJECT_NAME}
 )
 
+add_executable(sheep_node
+  src/sheep.cpp
+  src/boid.cpp
+)
+
+ament_target_dependencies(sheep_node
+  rclcpp
+  geometry_msgs
+  nav_msgs
+)
+
+target_link_libraries(sheep_node
+  Eigen3::Eigen
+)
+
+target_compile_definitions(sheep_node
+  PRIVATE INROF_SWERM_BOID_NODE_LIBRARY_ONLY
+)
+
+install(
+  TARGETS sheep_node
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 install(
   DIRECTORY config
   DESTINATION share/${PROJECT_NAME}
