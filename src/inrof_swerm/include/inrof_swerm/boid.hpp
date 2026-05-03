@@ -7,6 +7,7 @@
 #include "geometry_msgs/msg/twist.hpp"
 
 #include <Eigen/Dense>
+#include <atomic>
 #include <vector>
 
 class boid_node
@@ -14,6 +15,9 @@ class boid_node
 {
 public:
     boid_node(Eigen::MatrixXd wall_matrix = Eigen::MatrixXd{});
+    ~boid_node() override;
+
+    void publish_zero_velocity();
 
 protected:
     virtual Eigen::MatrixXd update_vels();
@@ -48,8 +52,10 @@ private:
     std::vector<rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr> cmd_vel_publishers_;
     std::vector<rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr> odom_subscribers_;
     rclcpp::TimerBase::SharedPtr control_timer_;
+    rclcpp::PreShutdownCallbackHandle stop_on_shutdown_callback_;
 
     std::vector<char> odom_received_;
     int received_odom_count_{0};
     bool is_ready{false};
+    std::atomic_bool zero_velocity_published_{false};
 };

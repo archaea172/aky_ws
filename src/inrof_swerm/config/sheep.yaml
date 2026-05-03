@@ -4,7 +4,7 @@ boid:
     max_vel: 0.5
     Ir: 100.0
     Ir_min: 0.01
-    k_separation: 100.0
+    k_separation: 50.0
     k_alignment: 11.0
     k_gravity: 5.0
     k_run: 20.0

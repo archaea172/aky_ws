@@ -61,6 +61,36 @@ boid_node::boid_node(Eigen::MatrixXd wall_matrix)
         50ms,
         std::bind(&boid_node::control_callback, this)
     );
+
+    this->stop_on_shutdown_callback_ =
+        this->get_node_base_interface()->get_context()->add_pre_shutdown_callback(
+            [this]() {
+                this->publish_zero_velocity();
+            }
+        );
+}
+
+boid_node::~boid_node()
+{
+    this->get_node_base_interface()->get_context()->remove_pre_shutdown_callback(
+        this->stop_on_shutdown_callback_
+    );
+    this->publish_zero_velocity();
+}
+
+void boid_node::publish_zero_velocity()
+{
+    if (!rclcpp::ok(this->get_node_base_interface()->get_context())) return;
+    if (this->zero_velocity_published_.exchange(true)) return;
+
+    geometry_msgs::msg::Twist txdata;
+    txdata.linear.x = 0.0;
+    txdata.linear.y = 0.0;
+    txdata.angular.z = 0.0;
+    for (auto& publisher : this->cmd_vel_publishers_)
+    {
+        publisher->publish(txdata);
+    }
 }
 
 void boid_node::odom_callback(int id, nav_msgs::msg::Odometry::ConstSharedPtr rxdata)
