@@ -1,7 +1,7 @@
 #include "follower.hpp"
 
-Follower::Follower(Eigen::MatrixXd wall_matrix)
-: boid_node(wall_matrix)
+Follower::Follower()
+: boid_node()
 {
     rclcpp::QoS device = rclcpp::QoS(rclcpp::KeepLast(10))
         .reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE)
