@@ -59,3 +59,34 @@ follower_node::follower_node()
         std::bind(&follower_node::control_callback, this)
     );
 }
+
+void follower_node::leader_odom_callback(nav_msgs::msg::Odometry::ConstSharedPtr rxdata)
+{
+    this->leader_pos_ << rxdata->pose.pose.position.x, rxdata->pose.pose.position.y;
+}
+
+void follower_node::odom_callback(int id, nav_msgs::msg::Odometry::ConstSharedPtr rxdata)
+{
+    if (id < 0 || id >= this->boid_params_.boid_num)
+    {
+        RCLCPP_ERROR(this->get_logger(), "id is invalid. please check robot num");
+        return;
+    }
+
+    this->pos_matrix_.col(id) << rxdata->pose.pose.position.x, rxdata->pose.pose.position.y;
+    this->vel_matrix_.col(id) << rxdata->twist.twist.linear.x, rxdata->twist.twist.linear.y;
+}
+
+void follower_node::control_callback()
+{
+    Eigen::MatrixXd cmd_vels = this->follower_core_->update_vels(pos_matrix_, vel_matrix_, this->leader_pos_);
+    
+    for (int i = 0; i < this->boid_params_.boid_num; ++i)
+    {
+        geometry_msgs::msg::Twist txdata;
+        txdata.linear.x = cmd_vels(0, i);
+        txdata.linear.y = cmd_vels(1, i);
+
+        this->cmd_vel_publishers_[i]->publish(txdata);
+    }
+}
