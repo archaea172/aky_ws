@@ -15,6 +15,36 @@ BoidCore::BoidCore(const BoidPrams& params)
     Ir_min_2_ = std::pow(boid_params_.Ir_min, 2);
 }
 
+Eigen::Vector2d BoidCore::make_base_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j, const Eigen::MatrixXd& v_j)
+{
+    return
+        this->boid_params_.k_separation * this->make_separation_power(x_i, x_j) +
+        this->boid_params_.k_alignment * this->make_alignment_power(x_i, x_j, v_j) +
+        this->boid_params_.k_gravity * this->make_gravity_power(x_i, x_j);
+}
+
+Eigen::MatrixXd BoidCore::update_vels(const Eigen::MatrixXd& pos_matrix, const Eigen::MatrixXd& vel_matrix)
+{
+    Eigen::MatrixXd cmd_vels(2, this->boid_params_.boid_num);
+    for (int i = 0; i < this->boid_params_.boid_num; ++i)
+    {
+        Eigen::Vector2d x_i = pos_matrix.col(i);
+        Eigen::MatrixXd x_j = remove_col(pos_matrix, i);
+        Eigen::MatrixXd v_j = remove_col(vel_matrix, i);
+        Eigen::Vector2d cmd_vel_i = this->make_base_power(x_i, x_j, v_j);
+
+        double cmd_vel_norm = cmd_vel_i.norm();
+        if (cmd_vel_norm > this->boid_params_.max_vel)
+        {
+            cmd_vel_i *= this->boid_params_.max_vel / cmd_vel_norm;
+        }
+
+        cmd_vels.col(i) = cmd_vel_i;
+    }
+
+    return cmd_vels;
+}
+
 Eigen::Vector2d BoidCore::make_separation_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j)
 {
     Eigen::Vector2d sum = Eigen::Vector2d::Zero();
