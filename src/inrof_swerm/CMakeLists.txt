@@ -21,6 +21,7 @@ include_directories(
 add_library(inrof_swerm_core
   src/core/boid_core.cpp
   src/core/follower_core.cpp
+  src/core/sheep_core.cpp
 )
 
 target_link_libraries(inrof_swerm_core
