@@ -56,6 +56,24 @@ target_link_libraries(boid_node
 )
 
 install(
+  TARGETS boid_node
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+add_executable(follower_node
+  src/follower_main.cpp
+)
+
+target_link_libraries(follower_node
+  inrof_swerm_ros
+)
+
+install(
+  TARGETS follower_node
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(
   DIRECTORY config
   DESTINATION share/${PROJECT_NAME}
 )
