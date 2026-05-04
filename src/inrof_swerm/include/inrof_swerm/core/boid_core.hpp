@@ -21,10 +21,10 @@ class BoidCore
 {
 public:
     BoidCore(const BoidPrams& params);
+    virtual Eigen::MatrixXd update_vels(const Eigen::MatrixXd& pos_matrix, const Eigen::MatrixXd& vel_matrix);
     
 protected:
     Eigen::Vector2d make_base_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j, const Eigen::MatrixXd& v_j);
-    virtual Eigen::MatrixXd update_vels(const Eigen::MatrixXd& pos_matrix, const Eigen::MatrixXd& vel_matrix);
 
     BoidPrams boid_params_;
     double Ir_2_;

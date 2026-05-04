@@ -23,4 +23,6 @@ private:
     std::vector<rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr> cmd_vel_publishers_;
     std::vector<rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr> odom_subscribers_;
     rclcpp::TimerBase::SharedPtr control_timer_;
+    Eigen::MatrixXd pos_matrix_;
+    Eigen::MatrixXd vel_matrix_;
 };

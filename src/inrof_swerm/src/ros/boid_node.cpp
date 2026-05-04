@@ -22,6 +22,9 @@ boid_node::boid_node()
 
     this->boid_core_ = std::make_unique<BoidCore>(boid_params_);
     
+    this->pos_matrix_ = Eigen::MatrixXd::Zero(2, this->boid_params_.boid_num);
+    this->vel_matrix_ = Eigen::MatrixXd::Zero(2, this->boid_params_.boid_num);
+
     rclcpp::QoS device = rclcpp::QoS(rclcpp::KeepLast(10))
         .reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE)
         .durability(RMW_QOS_POLICY_DURABILITY_VOLATILE);this->cmd_vel_publishers_.reserve(this->boid_params_.boid_num);
@@ -50,4 +53,30 @@ boid_node::boid_node()
         50ms,
         std::bind(&boid_node::control_callback, this)
     );
+}
+
+void boid_node::odom_callback(int id, nav_msgs::msg::Odometry::ConstSharedPtr rxdata)
+{
+    if (id < 0 || id >= this->boid_params_.boid_num)
+    {
+        RCLCPP_ERROR(this->get_logger(), "id is invalid. please check robot num");
+        return;
+    }
+
+    this->pos_matrix_.col(id) << rxdata->pose.pose.position.x, rxdata->pose.pose.position.y;
+    this->vel_matrix_.col(id) << rxdata->twist.twist.linear.x, rxdata->twist.twist.linear.y;
+}
+
+void boid_node::control_callback()
+{
+    Eigen::MatrixXd cmd_vels = this->boid_core_->update_vels(pos_matrix_, vel_matrix_);
+    
+    for (int i = 0; i < this->boid_params_.boid_num; ++i)
+    {
+        geometry_msgs::msg::Twist txdata;
+        txdata.linear.x = cmd_vels(0, i);
+        txdata.linear.y = cmd_vels(1, i);
+
+        this->cmd_vel_publishers_[i]->publish(txdata);
+    }
 }
