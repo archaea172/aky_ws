@@ -31,6 +31,7 @@ target_link_libraries(inrof_swerm_core
 add_library(inrof_swerm_ros
   src/ros/boid_node.cpp
   src/ros/follower_node.cpp
+  src/ros/sheep_node.cpp
 )
 
 ament_target_dependencies(inrof_swerm_ros
