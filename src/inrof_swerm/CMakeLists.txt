@@ -38,6 +38,19 @@ ament_target_dependencies(inrof_swerm_ros
 
 target_link_libraries(inrof_swerm_ros
   Eigen3::Eigen
+  inrof_swerm_core
+)
+
+target_link_libraries(inrof_swerm_ros
+  Eigen3::Eigen
+)
+
+add_executable(boid_node
+  src/boid_main.cpp
+)
+
+target_link_libraries(boid_node
+  inrof_swerm_ros
 )
 
 install(
