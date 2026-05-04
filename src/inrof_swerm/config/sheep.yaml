@@ -1,4 +1,4 @@
-boid:
+sheep_node:
   ros__parameters:
     boid_num: 20
     max_vel: 0.5

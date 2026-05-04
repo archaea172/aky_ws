@@ -18,18 +18,43 @@ include_directories(
   include/${PROJECT_NAME}
 )
 
-add_executable(boid_node
-  src/boid.cpp
+add_library(inrof_swerm_core
+  src/core/boid_core.cpp
+  src/core/follower_core.cpp
+  src/core/sheep_core.cpp
 )
 
-ament_target_dependencies(boid_node
+target_link_libraries(inrof_swerm_core
+  Eigen3::Eigen
+)
+
+add_library(inrof_swerm_ros
+  src/ros/boid_node.cpp
+  src/ros/follower_node.cpp
+  src/ros/sheep_node.cpp
+)
+
+ament_target_dependencies(inrof_swerm_ros
   rclcpp
-  geometry_msgs
   nav_msgs
+  geometry_msgs
+)
+
+target_link_libraries(inrof_swerm_ros
+  Eigen3::Eigen
+  inrof_swerm_core
+)
+
+target_link_libraries(inrof_swerm_ros
+  Eigen3::Eigen
+)
+
+add_executable(boid_node
+  src/boid_main.cpp
 )
 
 target_link_libraries(boid_node
-  Eigen3::Eigen
+  inrof_swerm_ros
 )
 
 install(
@@ -38,22 +63,11 @@ install(
 )
 
 add_executable(follower_node
-  src/follower.cpp
-  src/boid.cpp
-)
-
-ament_target_dependencies(follower_node
-  rclcpp
-  geometry_msgs
-  nav_msgs
+  src/follower_main.cpp
 )
 
 target_link_libraries(follower_node
-  Eigen3::Eigen
-)
-
-target_compile_definitions(follower_node
-  PRIVATE INROF_SWERM_BOID_NODE_LIBRARY_ONLY
+  inrof_swerm_ros
 )
 
 install(
@@ -62,22 +76,11 @@ install(
 )
 
 add_executable(sheep_node
-  src/sheep.cpp
-  src/boid.cpp
-)
-
-ament_target_dependencies(sheep_node
-  rclcpp
-  geometry_msgs
-  nav_msgs
+  src/sheep_main.cpp
 )
 
 target_link_libraries(sheep_node
-  Eigen3::Eigen
-)
-
-target_compile_definitions(sheep_node
-  PRIVATE INROF_SWERM_BOID_NODE_LIBRARY_ONLY
+  inrof_swerm_ros
 )
 
 install(
