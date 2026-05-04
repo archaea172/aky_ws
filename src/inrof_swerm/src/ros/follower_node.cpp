@@ -25,9 +25,11 @@ follower_node::follower_node()
     this->follower_core_ = std::make_unique<FollowerCore>(boid_params_, k_follow_);
 
     this->pos_matrix_ = Eigen::MatrixXd::Zero(2, this->boid_params_.boid_num);
-    this->vel_matrix_ = Eigen::MatrixXd::Zero(2, this->boid_params_.boid_num);rclcpp::QoS device = rclcpp::QoS(rclcpp::KeepLast(10))
+    this->vel_matrix_ = Eigen::MatrixXd::Zero(2, this->boid_params_.boid_num);
+    rclcpp::QoS device = rclcpp::QoS(rclcpp::KeepLast(10))
         .reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE)
-        .durability(RMW_QOS_POLICY_DURABILITY_VOLATILE);this->cmd_vel_publishers_.reserve(this->boid_params_.boid_num);
+        .durability(RMW_QOS_POLICY_DURABILITY_VOLATILE);
+    this->cmd_vel_publishers_.reserve(this->boid_params_.boid_num);
     for (int i = 0; i < this->boid_params_.boid_num; ++i)
     {
         this->cmd_vel_publishers_.push_back(

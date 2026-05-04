@@ -27,7 +27,8 @@ boid_node::boid_node()
 
     rclcpp::QoS device = rclcpp::QoS(rclcpp::KeepLast(10))
         .reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE)
-        .durability(RMW_QOS_POLICY_DURABILITY_VOLATILE);this->cmd_vel_publishers_.reserve(this->boid_params_.boid_num);
+        .durability(RMW_QOS_POLICY_DURABILITY_VOLATILE);
+    this->cmd_vel_publishers_.reserve(this->boid_params_.boid_num);
     for (int i = 0; i < this->boid_params_.boid_num; ++i)
     {
         this->cmd_vel_publishers_.push_back(
