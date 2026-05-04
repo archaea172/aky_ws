@@ -75,6 +75,19 @@ install(
   DESTINATION lib/${PROJECT_NAME}
 )
 
+add_executable(sheep_node
+  src/sheep_main.cpp
+)
+
+target_link_libraries(sheep_node
+  inrof_swerm_ros
+)
+
+install(
+  TARGETS sheep_node
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 install(
   DIRECTORY config
   DESTINATION share/${PROJECT_NAME}
