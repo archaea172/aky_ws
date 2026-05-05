@@ -55,7 +55,7 @@ actuators = "\n".join(
     for i in range(ROBOT_NUM)
 )
 balls = "\n".join(
-    make_ball_body(i, x=i * SPACING, y=SPACING)
+    make_ball_body(i, x=i * SPACING, y=2.0)
     for i in range(BALL_NUM)
 )
 

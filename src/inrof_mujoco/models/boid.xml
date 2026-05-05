@@ -78,7 +78,7 @@
     </body>
     
     
-    <body name="ball_0" pos="0.0 0.4 0.05">
+    <body name="ball_0" pos="0.0 2.0 0.05">
       <joint name="ball_0_x" type="slide" axis="1 0 0"/>
       <joint name="ball_0_y" type="slide" axis="0 1 0"/>
 
@@ -92,7 +92,7 @@
     </body>
     
 
-    <body name="ball_1" pos="0.4 0.4 0.05">
+    <body name="ball_1" pos="0.4 2.0 0.05">
       <joint name="ball_1_x" type="slide" axis="1 0 0"/>
       <joint name="ball_1_y" type="slide" axis="0 1 0"/>
 
@@ -106,7 +106,7 @@
     </body>
     
 
-    <body name="ball_2" pos="0.8 0.4 0.05">
+    <body name="ball_2" pos="0.8 2.0 0.05">
       <joint name="ball_2_x" type="slide" axis="1 0 0"/>
       <joint name="ball_2_y" type="slide" axis="0 1 0"/>
 
