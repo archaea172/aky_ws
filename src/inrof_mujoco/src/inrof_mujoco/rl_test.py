@@ -13,7 +13,7 @@ class SwermEnv(gym.Env):
         self.max_steps = 500
         self.step_count = 0
         self.frame_skip = 5
-        self.target_position = np.array([5.0, 5.0, 0.0])
+        self.target_position = np.array([5.0, 5.0])
         self.vx_ids = np.array([self.model.actuator(f"robot_{i}_vx").id for i in range(robot_num)])
         self.vy_ids = np.array([self.model.actuator(f"robot_{i}_vy").id for i in range(robot_num)])
         self.robot_x_qpos_ids = np.empty(robot_num, dtype=np.intp)
@@ -31,7 +31,7 @@ class SwermEnv(gym.Env):
         self._robot_vel_matrix = np.empty((2, robot_num), dtype=np.float64)
         self._leader_pos = np.empty(2, dtype=np.float64)
 
-        obs_dim = robot_num * 4 + ball_num * 4 + 3
+        obs_dim = robot_num * 4 + ball_num * 4 + 2  # robot pos(2) + robot vel(2) + ball pos(2) + ball vel(2) + target pos(2)
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(obs_dim,), dtype=np.float32)
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(2,), dtype=np.float32)
 
@@ -67,3 +67,44 @@ class SwermEnv(gym.Env):
         )
         self.data.ctrl[self.vx_ids] = cmd_vels[0, :]
         self.data.ctrl[self.vy_ids] = cmd_vels[1, :]
+
+        self.step_count += 1
+
+        obs = self._get_obs()
+        balls_pos = np.empty((2, self.ball_num), dtype=np.float64)
+        for i in range(self.ball_num):
+            body = self.data.body[f"ball_{i}"]
+            balls_pos[0, i] = body.xpos[0]
+            balls_pos[1, i] = body.xpos[1]
+
+        reward = self._get_reward(balls_pos)
+        terminated = self.step_count >= self.max_steps
+        truncated = False
+
+        return obs, reward, terminated, truncated, {}
+
+    def _get_obs(self):
+        values = []
+        for i in range(self.robot_num):
+            body = self.data.body[f"robot_{i}"]
+            values.extend(body.xpos[:2])
+            values.extend(body.cvel[:2])
+
+        for i in range(self.ball_num):
+            body = self.data.body[f"ball_{i}"]
+            values.extend(body.xpos[:2])
+            values.extend(body.cvel[:2])
+
+        values.extend(self.target_position)
+
+        return np.array(values, dtype=np.float32)
+    
+    def _get_reward(self, balls_pos):
+        diff = balls_pos - self.target_position[:, None]
+        return -float(np.sqrt(np.sum(diff * diff, axis=0)).sum())
+
+from stable_baselines3 import PPO
+env = SwermEnv(xml_path="models/boid.xml", robot_num=5, ball_num=3)
+model = PPO("MlpPolicy", env, verbose=1)
+model.learn(total_timesteps=100000)
+model.save("ppo_swerm")
