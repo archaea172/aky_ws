@@ -1,23 +1,14 @@
-<mujoco model="swarm_cube">
+
+<mujoco model="five_robots">
   <compiler angle="radian"/>
   <option timestep="0.01" gravity="0 0 0"/>
 
-  <default>
-    <geom friction="1 0.1 0.1"/>
-    <joint damping="0.1"/>
-  </default>
-
   <worldbody>
     <light name="sun" pos="0 0 5"/>
+    <geom name="floor" type="plane" size="5 5 0.1" rgba="0.8 0.8 0.8 1"/>
 
-    <geom
-      name="floor"
-      type="plane"
-      size="5 5 0.1"
-      rgba="0.8 0.8 0.8 1"
-    />
-
-    <body name="robot_0" pos="0 0 0.05">
+    
+    <body name="robot_0" pos="0.0 0.0 0.05">
       <joint name="robot_0_x" type="slide" axis="1 0 0"/>
       <joint name="robot_0_y" type="slide" axis="0 1 0"/>
 
@@ -29,10 +20,85 @@
         rgba="1 0 0 1"
       />
     </body>
+    
+
+    <body name="robot_1" pos="0.4 0.0 0.05">
+      <joint name="robot_1_x" type="slide" axis="1 0 0"/>
+      <joint name="robot_1_y" type="slide" axis="0 1 0"/>
+
+      <geom
+        name="robot_1_box"
+        type="box"
+        size="0.05 0.05 0.05"
+        mass="1.0"
+        rgba="1 0 0 1"
+      />
+    </body>
+    
+
+    <body name="robot_2" pos="0.8 0.0 0.05">
+      <joint name="robot_2_x" type="slide" axis="1 0 0"/>
+      <joint name="robot_2_y" type="slide" axis="0 1 0"/>
+
+      <geom
+        name="robot_2_box"
+        type="box"
+        size="0.05 0.05 0.05"
+        mass="1.0"
+        rgba="1 0 0 1"
+      />
+    </body>
+    
+
+    <body name="robot_3" pos="1.2000000000000002 0.0 0.05">
+      <joint name="robot_3_x" type="slide" axis="1 0 0"/>
+      <joint name="robot_3_y" type="slide" axis="0 1 0"/>
+
+      <geom
+        name="robot_3_box"
+        type="box"
+        size="0.05 0.05 0.05"
+        mass="1.0"
+        rgba="1 0 0 1"
+      />
+    </body>
+    
+
+    <body name="robot_4" pos="1.6 0.0 0.05">
+      <joint name="robot_4_x" type="slide" axis="1 0 0"/>
+      <joint name="robot_4_y" type="slide" axis="0 1 0"/>
+
+      <geom
+        name="robot_4_box"
+        type="box"
+        size="0.05 0.05 0.05"
+        mass="1.0"
+        rgba="1 0 0 1"
+      />
+    </body>
+    
   </worldbody>
 
   <actuator>
+    
     <velocity name="robot_0_vx" joint="robot_0_x" kv="10" ctrllimited="true" ctrlrange="-0.2 0.2"/>
     <velocity name="robot_0_vy" joint="robot_0_y" kv="10" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    
+
+    <velocity name="robot_1_vx" joint="robot_1_x" kv="10" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    <velocity name="robot_1_vy" joint="robot_1_y" kv="10" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    
+
+    <velocity name="robot_2_vx" joint="robot_2_x" kv="10" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    <velocity name="robot_2_vy" joint="robot_2_y" kv="10" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    
+
+    <velocity name="robot_3_vx" joint="robot_3_x" kv="10" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    <velocity name="robot_3_vy" joint="robot_3_y" kv="10" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    
+
+    <velocity name="robot_4_vx" joint="robot_4_x" kv="10" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    <velocity name="robot_4_vy" joint="robot_4_y" kv="10" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    
   </actuator>
 </mujoco>
