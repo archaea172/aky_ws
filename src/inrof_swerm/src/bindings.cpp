@@ -6,7 +6,7 @@
 #include "core/follower_core.hpp"
 #include "core/sheep_core.hpp"
 
-PYBIND11_MODULE(inrof_swerm_cpp, m)
+PYBIND11_MODULE(_core, m)
 {
     m.doc() = "Python bindings for inrof_swerm";
 

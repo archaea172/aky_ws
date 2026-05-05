@@ -105,6 +105,10 @@ pybind11_add_module(inrof_swerm_cpp
   src/bindings.cpp
 )
 
+set_target_properties(inrof_swerm_cpp PROPERTIES
+  OUTPUT_NAME "_core"
+)
+
 target_link_libraries(inrof_swerm_cpp
   PRIVATE
     inrof_swerm_core
@@ -115,7 +119,7 @@ ament_python_install_package(${PROJECT_NAME}
 )
 
 install(TARGETS inrof_swerm_cpp
-  LIBRARY DESTINATION "${PYTHON_INSTALL_DIR}"
+  LIBRARY DESTINATION "${PYTHON_INSTALL_DIR}/${PROJECT_NAME}"
 )
 
 if(BUILD_TESTING)
