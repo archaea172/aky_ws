@@ -49,6 +49,7 @@ class SwermEnv(gym.Env):
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
         mujoco.mj_resetData(self.model, self.data)
+        mujoco.mj_forward(self.model, self.data)
         self.step_count = 0
         return self._get_obs(), {}
 
@@ -68,12 +69,15 @@ class SwermEnv(gym.Env):
         self.data.ctrl[self.vx_ids] = cmd_vels[0, :]
         self.data.ctrl[self.vy_ids] = cmd_vels[1, :]
 
+        for _ in range(self.frame_skip):
+            mujoco.mj_step(self.model, self.data)
+
         self.step_count += 1
 
         obs = self._get_obs()
         balls_pos = np.empty((2, self.ball_num), dtype=np.float64)
         for i in range(self.ball_num):
-            body = self.data.body[f"ball_{i}"]
+            body = self.data.body(f"ball_{i}")
             balls_pos[0, i] = body.xpos[0]
             balls_pos[1, i] = body.xpos[1]
 
@@ -86,12 +90,12 @@ class SwermEnv(gym.Env):
     def _get_obs(self):
         values = []
         for i in range(self.robot_num):
-            body = self.data.body[f"robot_{i}"]
+            body = self.data.body(f"robot_{i}")
             values.extend(body.xpos[:2])
             values.extend(body.cvel[:2])
 
         for i in range(self.ball_num):
-            body = self.data.body[f"ball_{i}"]
+            body = self.data.body(f"ball_{i}")
             values.extend(body.xpos[:2])
             values.extend(body.cvel[:2])
 
