@@ -12,6 +12,9 @@ find_package(geometry_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 find_package(OpenMP)
+find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
+find_package(pybind11 CONFIG REQUIRED)
+find_package(ament_cmake_python REQUIRED)
 
 include_directories(
   include
@@ -23,6 +26,11 @@ add_library(inrof_swerm_core
   src/core/follower_core.cpp
   src/core/sheep_core.cpp
 )
+
+set_target_properties(inrof_swerm_core PROPERTIES
+  POSITION_INDEPENDENT_CODE ON
+)
+
 
 target_link_libraries(inrof_swerm_core
   Eigen3::Eigen
@@ -91,6 +99,27 @@ install(
 install(
   DIRECTORY config
   DESTINATION share/${PROJECT_NAME}
+)
+
+pybind11_add_module(inrof_swerm_cpp
+  src/bindings.cpp
+)
+
+set_target_properties(inrof_swerm_cpp PROPERTIES
+  OUTPUT_NAME "_core"
+)
+
+target_link_libraries(inrof_swerm_cpp
+  PRIVATE
+    inrof_swerm_core
+)
+
+ament_python_install_package(${PROJECT_NAME}
+  PACKAGE_DIR src/${PROJECT_NAME}
+)
+
+install(TARGETS inrof_swerm_cpp
+  LIBRARY DESTINATION "${PYTHON_INSTALL_DIR}/${PROJECT_NAME}"
 )
 
 if(BUILD_TESTING)
