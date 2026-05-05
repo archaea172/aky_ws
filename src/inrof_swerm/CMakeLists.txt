@@ -14,6 +14,7 @@ find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 find_package(OpenMP)
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
 find_package(pybind11 CONFIG REQUIRED)
+find_package(ament_cmake_python REQUIRED)
 
 include_directories(
   include
@@ -109,8 +110,12 @@ target_link_libraries(inrof_swerm_cpp
     inrof_swerm_core
 )
 
+ament_python_install_package(${PROJECT_NAME}
+  PACKAGE_DIR src/${PROJECT_NAME}
+)
+
 install(TARGETS inrof_swerm_cpp
-  LIBRARY DESTINATION lib/python3/dist-packages
+  LIBRARY DESTINATION "${PYTHON_INSTALL_DIR}"
 )
 
 if(BUILD_TESTING)
