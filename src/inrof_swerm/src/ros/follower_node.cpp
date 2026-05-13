@@ -30,7 +30,7 @@ follower_node::CallbackReturn follower_node::on_configure(const rclcpp_lifecycle
     this->parameter_callback_handle_ = this->add_on_set_parameters_callback(
         std::bind(&follower_node::parameters_callback, this, std::placeholders::_1)
     );
-    
+
     this->pos_matrix_ = Eigen::MatrixXd::Zero(2, this->boid_params_.boid_num);
     this->vel_matrix_ = Eigen::MatrixXd::Zero(2, this->boid_params_.boid_num);
     this->leader_pos_ = Eigen::Vector2d::Zero();
@@ -91,21 +91,34 @@ follower_node::CallbackReturn follower_node::on_activate(const rclcpp_lifecycle:
 
 follower_node::CallbackReturn follower_node::on_deactivate(const rclcpp_lifecycle::State &state)
 {
+    this->control_stop();
+    this->control_timer_.reset();
+    this->cmd_vel_publishers_.clear();
+    this->odom_subscribers_.clear();
+    this->leader_pos_subscriber_.reset();
+    this->follower_core_.reset();
+    this->control_stop();
     return CallbackReturn::SUCCESS;
 }
 
 follower_node::CallbackReturn follower_node::on_cleanup(const rclcpp_lifecycle::State &state)
 {
+    this->control_stop();
+    this->pos_matrix_ = Eigen::MatrixXd::Zero(2, this->boid_params_.boid_num);
+    this->vel_matrix_ = Eigen::MatrixXd::Zero(2, this->boid_params_.boid_num);
+    this->leader_pos_ = Eigen::Vector2d::Zero();
     return CallbackReturn::SUCCESS;
 }
 
 follower_node::CallbackReturn follower_node::on_error(const rclcpp_lifecycle::State &state)
 {
+    this->control_stop();
     return CallbackReturn::SUCCESS;
 }
 
 follower_node::CallbackReturn follower_node::on_shutdown(const rclcpp_lifecycle::State &state)
 {
+    this->control_stop();
     return CallbackReturn::SUCCESS;
 }
 
@@ -208,5 +221,19 @@ void follower_node::control_callback()
         txdata.linear.y = cmd_vels(1, i);
 
         this->cmd_vel_publishers_[i]->publish(txdata);
+    }
+}
+
+void follower_node::control_stop()
+{
+    if (!rclcpp::ok(this->get_node_base_interface()->get_context())) return;
+
+    geometry_msgs::msg::Twist txdata;
+    txdata.linear.x = 0.0;
+    txdata.linear.y = 0.0;
+    txdata.angular.z = 0.0;
+    for (auto& publisher : this->cmd_vel_publishers_)
+    {
+        publisher->publish(txdata);
     }
 }

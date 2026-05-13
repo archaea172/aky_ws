@@ -8,6 +8,8 @@
 
 #include "core/follower_core.hpp"
 
+#include <atomic>
+
 class follower_node
 : public rclcpp_lifecycle::LifecycleNode
 {
@@ -16,6 +18,8 @@ public:
     using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
 
 private:
+    void control_stop();
+
     void odom_callback(int id, nav_msgs::msg::Odometry::ConstSharedPtr rxdata);
     void leader_odom_callback(nav_msgs::msg::Odometry::ConstSharedPtr rxdata);
     void control_callback();
