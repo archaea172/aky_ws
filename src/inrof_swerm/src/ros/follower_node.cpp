@@ -8,27 +8,44 @@ follower_node::follower_node()
 : rclcpp_lifecycle::LifecycleNode("follower_node")
 {
     this->declare_parameter<int>("boid_num", 20);
-    this->boid_params_.boid_num = this->get_parameter("boid_num").as_int();
     this->declare_parameter<double>("max_vel", 0.05);
-    this->boid_params_.max_vel = this->get_parameter("max_vel").as_double();
     this->declare_parameter<double>("Ir", 100);
-    this->boid_params_.Ir = this->get_parameter("Ir").as_double();
     this->declare_parameter<double>("Ir_min", 0.01);
-    this->boid_params_.Ir_min = this->get_parameter("Ir_min").as_double();
     this->declare_parameter<double>("k_separation", 20.0);
     this->declare_parameter<double>("k_alignment", 1.1);
     this->declare_parameter<double>("k_gravity", 0.5);
+    this->declare_parameter<double>("k_follow", 0.5);
+}
+
+follower_node::CallbackReturn follower_node::on_configure(const rclcpp_lifecycle::State &state)
+{
+    this->boid_params_.boid_num = this->get_parameter("boid_num").as_int();
+    this->boid_params_.max_vel = this->get_parameter("max_vel").as_double();
+    this->boid_params_.Ir = this->get_parameter("Ir").as_double();
+    this->boid_params_.Ir_min = this->get_parameter("Ir_min").as_double();
     this->boid_params_.k_separation = this->get_parameter("k_separation").as_double();
     this->boid_params_.k_alignment = this->get_parameter("k_alignment").as_double();
     this->boid_params_.k_gravity = this->get_parameter("k_gravity").as_double();
-    this->declare_parameter<double>("k_follow", 0.5);
     this->k_follow_ = this->get_parameter("k_follow").as_double();
-
-    this->follower_core_ = std::make_unique<FollowerCore>(boid_params_, k_follow_);
-
+    this->parameter_callback_handle_ = this->add_on_set_parameters_callback(
+        std::bind(&follower_node::parameters_callback, this, std::placeholders::_1)
+    );
+    
     this->pos_matrix_ = Eigen::MatrixXd::Zero(2, this->boid_params_.boid_num);
     this->vel_matrix_ = Eigen::MatrixXd::Zero(2, this->boid_params_.boid_num);
     this->leader_pos_ = Eigen::Vector2d::Zero();
+
+    RCLCPP_INFO(
+        get_logger(),
+        "on_configure() called. state: id=%u, label=%s",
+        state.id(),
+        state.label().c_str());
+    return CallbackReturn::SUCCESS;
+}
+
+follower_node::CallbackReturn follower_node::on_activate(const rclcpp_lifecycle::State &state)
+{
+    this->follower_core_ = std::make_unique<FollowerCore>(boid_params_, k_follow_);
     rclcpp::QoS device = rclcpp::QoS(rclcpp::KeepLast(10))
         .reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE)
         .durability(RMW_QOS_POLICY_DURABILITY_VOLATILE);
@@ -63,37 +80,31 @@ follower_node::follower_node()
         50ms,
         std::bind(&follower_node::control_callback, this)
     );
-    this->parameter_callback_handle_ = this->add_on_set_parameters_callback(
-        std::bind(&follower_node::parameters_callback, this, std::placeholders::_1)
-    );
+    
+    RCLCPP_INFO(
+        get_logger(),
+        "on_activate() called. state: id=%u, label=%s",
+        state.id(),
+        state.label().c_str());
+    return CallbackReturn::SUCCESS;
 }
 
-follower_node::CallbackReturn follower_node::on_configure(const rclcpp_lifecycle::State &)
+follower_node::CallbackReturn follower_node::on_deactivate(const rclcpp_lifecycle::State &state)
 {
     return CallbackReturn::SUCCESS;
 }
 
-follower_node::CallbackReturn follower_node::on_activate(const rclcpp_lifecycle::State &)
+follower_node::CallbackReturn follower_node::on_cleanup(const rclcpp_lifecycle::State &state)
 {
     return CallbackReturn::SUCCESS;
 }
 
-follower_node::CallbackReturn follower_node::on_deactivate(const rclcpp_lifecycle::State &)
+follower_node::CallbackReturn follower_node::on_error(const rclcpp_lifecycle::State &state)
 {
     return CallbackReturn::SUCCESS;
 }
 
-follower_node::CallbackReturn follower_node::on_cleanup(const rclcpp_lifecycle::State &)
-{
-    return CallbackReturn::SUCCESS;
-}
-
-follower_node::CallbackReturn follower_node::on_error(const rclcpp_lifecycle::State &)
-{
-    return CallbackReturn::SUCCESS;
-}
-
-follower_node::CallbackReturn follower_node::on_shutdown(const rclcpp_lifecycle::State &)
+follower_node::CallbackReturn follower_node::on_shutdown(const rclcpp_lifecycle::State &state)
 {
     return CallbackReturn::SUCCESS;
 }
