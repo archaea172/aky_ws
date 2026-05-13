@@ -15,6 +15,7 @@ find_package(OpenMP)
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
 find_package(pybind11 CONFIG REQUIRED)
 find_package(ament_cmake_python REQUIRED)
+find_package(rclcpp_lifecycle REQUIRED)
 
 include_directories(
   include
@@ -44,6 +45,7 @@ add_library(inrof_swerm_ros
 
 ament_target_dependencies(inrof_swerm_ros
   rclcpp
+  rclcpp_lifecycle
   nav_msgs
   geometry_msgs
 )
