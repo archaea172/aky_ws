@@ -60,61 +60,6 @@ def generate_launch_description():
     bridge_arguments = []
     bridge_remappings = []
 
-
-    leader_description_content = Command(
-        [
-            PathJoinSubstitution([FindExecutable(name="xacro")]),
-            " ",
-            PathJoinSubstitution(
-                [
-                    FindPackageShare("inrof_sim"),
-                    "urdf",
-                    "leader.urdf",
-                ]
-            ),
-            " ",
-        ]
-    )
-    robot_leader_node = Node(
-        package='robot_state_publisher',
-        executable='robot_state_publisher',
-        namespace="leader",
-        name='robot_state_publisher',
-        output='screen',
-        parameters=[
-            {'robot_description': leader_description_content},
-            {'frame_prefix': "leader/"},
-        ],
-    )
-    ld.add_action(robot_leader_node)
-
-    spawn_node = Node(
-        package='ros_gz_sim',
-        executable='create',
-        name=f'spawn_leader',
-        output='screen',
-        arguments=[
-            '-world', world_name,
-            '-string', leader_description_content,
-            '-name', "leader",
-            '-x', "4.0",
-            '-y', "4.0",
-            '-z', str(ROBOT_Z),
-        ],
-    )
-    ld.add_action(spawn_node)
-
-    bridge_arguments.extend([
-        f'/model/leader/cmd_vel@geometry_msgs/msg/Twist]{gz_twist_type}',
-        f'/model/leader/tf@tf2_msgs/msg/TFMessage[ignition.msgs.Pose_V',
-        f'/model/leader/odometry@nav_msgs/msg/Odometry[ignition.msgs.Odometry',
-    ])
-    bridge_remappings.extend([
-        (f'/model/leader/cmd_vel', f'/leader/cmd_vel'),
-        (f'/model/leader/tf', '/tf'),
-        (f'/model/leader/odometry', f'/leader/odometry'),
-    ])
-
     for i in range(ROBOT_NUM):
         robot_name = f"robot_{i}"
         frame_prefix = f"{robot_name}/"
