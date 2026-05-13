@@ -6,6 +6,7 @@
 
 #include "lifecycle_msgs/srv/change_state.hpp"
 #include "lifecycle_msgs/srv/get_state.hpp"
+#include "lifecycle_msgs/srv/get_available_transitions.hpp"
 #include "swerm_msgs/action/lifecycle.hpp"
 
 using namespace std::placeholders;
