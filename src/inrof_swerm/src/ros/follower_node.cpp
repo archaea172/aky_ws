@@ -98,6 +98,12 @@ follower_node::CallbackReturn follower_node::on_deactivate(const rclcpp_lifecycl
     this->leader_pos_subscriber_.reset();
     this->follower_core_.reset();
     this->control_stop();
+    
+    RCLCPP_INFO(
+        get_logger(),
+        "on_deactivate() called. state: id=%u, label=%s",
+        state.id(),
+        state.label().c_str());
     return CallbackReturn::SUCCESS;
 }
 
@@ -107,18 +113,36 @@ follower_node::CallbackReturn follower_node::on_cleanup(const rclcpp_lifecycle::
     this->pos_matrix_ = Eigen::MatrixXd::Zero(2, this->boid_params_.boid_num);
     this->vel_matrix_ = Eigen::MatrixXd::Zero(2, this->boid_params_.boid_num);
     this->leader_pos_ = Eigen::Vector2d::Zero();
+    
+    RCLCPP_INFO(
+        get_logger(),
+        "on_cleanup() called. state: id=%u, label=%s",
+        state.id(),
+        state.label().c_str());
     return CallbackReturn::SUCCESS;
 }
 
 follower_node::CallbackReturn follower_node::on_error(const rclcpp_lifecycle::State &state)
 {
     this->control_stop();
+    
+    RCLCPP_INFO(
+        get_logger(),
+        "on_error() called. state: id=%u, label=%s",
+        state.id(),
+        state.label().c_str());
     return CallbackReturn::SUCCESS;
 }
 
 follower_node::CallbackReturn follower_node::on_shutdown(const rclcpp_lifecycle::State &state)
 {
     this->control_stop();
+    
+    RCLCPP_INFO(
+        get_logger(),
+        "on_shutdown() called. state: id=%u, label=%s",
+        state.id(),
+        state.label().c_str());
     return CallbackReturn::SUCCESS;
 }
 
