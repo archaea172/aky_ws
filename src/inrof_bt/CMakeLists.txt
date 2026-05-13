@@ -7,9 +7,26 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
+find_package(swerm_msgs REQUIRED)
+find_package(lifecycle_msgs REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_action REQUIRED)
+
+include_directories(
+  include
+  include/${PROJECT_NAME}
+)
+
+add_executable(lifecycle_server
+  src/lifecycle_server.cpp
+)
+ament_target_dependencies(lifecycle_server
+  rclcpp
+  rclcpp_action
+  swerm_msgs
+  lifecycle_msgs
+)
+install(TARGETS lifecycle_server DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
