@@ -1,0 +1,6 @@
+lifecycle_msgs/State state
+---
+bool success
+string msg
+---
+string msg
