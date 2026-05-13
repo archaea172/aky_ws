@@ -212,7 +212,6 @@ rcl_interfaces::msg::SetParametersResult follower_node::parameters_callback(
 
     this->boid_params_ = next_boid_params;
     this->k_follow_ = next_k_follow;
-    this->follower_core_ = std::make_unique<FollowerCore>(this->boid_params_, this->k_follow_);
 
     return result;
 }
