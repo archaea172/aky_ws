@@ -1,5 +1,7 @@
 geometry_msgs/PoseStamped start_pos
 geometry_msgs/PoseStamped goal_pos
 geometry_msgs/PoseStamped[] waypoints
+
+float64 resolution
 ---
 nav_msgs/Path[] route
