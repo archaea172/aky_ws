@@ -17,6 +17,7 @@ private:
         const std::shared_ptr<swerm_msgs::srv::LeaderPath::Request> request,
         std::shared_ptr<swerm_msgs::srv::LeaderPath::Response> response
     );
+    nav_msgs::msg::Path gen_path(swerm_msgs::srv::LeaderPath::Request request);
 
     rclcpp::Service<swerm_msgs::srv::LeaderPath>::SharedPtr path_server_;
     rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_publisher_;
