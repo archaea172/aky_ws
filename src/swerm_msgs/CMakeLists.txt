@@ -9,14 +9,16 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 
 set(action_files
   "action/Lifecycle.action"
+  "action/LeaderPos.action"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${action_files}
-  DEPENDENCIES lifecycle_msgs
+  DEPENDENCIES lifecycle_msgs geometry_msgs
 )
 
 ament_export_dependencies(rosidl_default_runtime)
