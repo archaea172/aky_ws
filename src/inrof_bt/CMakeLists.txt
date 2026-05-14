@@ -11,12 +11,14 @@ find_package(swerm_msgs REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
+find_package(behaviortree_ros2 REQUIRED)
 
 include_directories(
   include
   include/${PROJECT_NAME}
 )
 
+# lifecycle server
 add_executable(lifecycle_server
   src/lifecycle_server.cpp
 )
@@ -27,6 +29,16 @@ ament_target_dependencies(lifecycle_server
   lifecycle_msgs
 )
 install(TARGETS lifecycle_server DESTINATION lib/${PROJECT_NAME})
+
+# bt library
+add_library(bt_library
+  src/bt/lifecycle_bt.cpp
+)
+ament_target_dependencies(bt_library
+  lifecycle_msgs
+  swerm_msgs
+)
+target_link_libraries(bt_library behaviortree_ros2::behaviortree_ros2)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
