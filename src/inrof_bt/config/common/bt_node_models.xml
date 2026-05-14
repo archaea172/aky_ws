@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root BTCPP_format="4">
+  <TreeNodesModel>
+    <Action ID="lifecycle_action" editable="true">
+      <input_port name="node_name"/>
+      <input_port name="state"/>
+    </Action>
+  </TreeNodesModel>
+</root>

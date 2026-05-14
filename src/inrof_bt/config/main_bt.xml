@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root BTCPP_format="4"
+      main_tree_to_execute="MainTree">
+  <include path="common/bt_node_models.xml"/>
+
+  <BehaviorTree ID="MainTree">
+    <Sequence>
+      <lifecycle_action node_name="follower_node"
+                        state="inactive"/>
+      <Delay delay_msec="2000">
+        <lifecycle_action node_name="follower_node"
+                          state="active"/>
+      </Delay>
+      <Delay delay_msec="2000">
+        <lifecycle_action node_name="follower_node"
+                          state="inactive"/>
+      </Delay>
+    </Sequence>
+  </BehaviorTree>
+
+  <!-- Description of Node Models (used by Groot) -->
+  <TreeNodesModel>
+    <Action ID="lifecycle_action"
+            editable="true">
+      <input_port name="node_name"/>
+      <input_port name="state"/>
+    </Action>
+  </TreeNodesModel>
+
+</root>
