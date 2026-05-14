@@ -7,9 +7,33 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(swerm_msgs REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(Eigen3 3.3 REQUIRED NO_MODULE)
+
+include_directories(
+  include
+  include/${PROJECT_NAME}
+)
+
+add_executable(path_generate_server
+  src/path_generate_server.cpp
+)
+target_link_libraries(path_generate_server
+  Eigen3::Eigen
+)
+ament_target_dependencies(path_generate_server
+  rclcpp
+  swerm_msgs
+  nav_msgs
+  geometry_msgs
+)
+install(
+  TARGETS path_generate_server
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
