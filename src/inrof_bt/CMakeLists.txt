@@ -40,6 +40,23 @@ ament_target_dependencies(bt_library
 )
 target_link_libraries(bt_library behaviortree_ros2::behaviortree_ros2)
 
+# bt node
+add_executable(inrof_bt_node
+  src/inrof_bt_node.cpp
+)
+ament_target_dependencies(inrof_bt_node
+  rclcpp
+  rclcpp_action
+  lifecycle_msgs
+  swerm_msgs
+  ament_index_cpp
+)
+target_link_libraries(inrof_bt_node
+  behaviortree_ros2::behaviortree_ros2
+  bt_library
+)
+install(TARGETS inrof_bt_node DESTINATION lib/${PROJECT_NAME})
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights
