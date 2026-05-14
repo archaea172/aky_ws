@@ -6,6 +6,8 @@
 #include "swerm_msgs/srv/leader_path.hpp"
 #include "nav_msgs/msg/path.hpp"
 
+#include <Eigen/Dense>
+
 class PathGenerateServer
 : public rclcpp::Node
 {

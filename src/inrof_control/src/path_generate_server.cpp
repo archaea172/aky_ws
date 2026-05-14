@@ -3,13 +3,13 @@
 PathGenerateServer::PathGenerateServer()
 : rclcpp::Node("path_generate_server")
 {
-    rclcpp::QoS device = rclcpp::QoS(rclcpp::KeepLast(10))
+    rclcpp::QoS path = rclcpp::QoS(rclcpp::KeepLast(1))
         .reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE)
-        .durability(RMW_QOS_POLICY_DURABILITY_VOLATILE);
+        .durability(RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL);
 
     this->path_publisher_ = this->create_publisher<nav_msgs::msg::Path>(
         "leader_path",
-        device
+        path
     );
 
     this->path_server_ = this->create_service<swerm_msgs::srv::LeaderPath>(
@@ -31,11 +31,34 @@ void PathGenerateServer::server_callback(
 nav_msgs::msg::Path PathGenerateServer::gen_path(swerm_msgs::srv::LeaderPath::Request request)
 {
     nav_msgs::msg::Path path;
+    const auto stamp = this->now();
+    path.header.stamp = stamp;
+    path.header.frame_id = request.start_pos.header.frame_id;
 
-    double start_x = request.start_pos.pose.position.x;
-    double start_y = request.start_pos.pose.position.y;
-    double goal_x = request.goal_pos.pose.position.x;
-    double goal_y = request.goal_pos.pose.position.y;
+    Eigen::Vector2d start_xy;
+    start_xy << request.start_pos.pose.position.x, request.start_pos.pose.position.y;
+    Eigen::Vector2d goal_xy;
+    goal_xy << request.goal_pos.pose.position.x, request.goal_pos.pose.position.y;
+    Eigen::Vector2d diff = goal_xy - start_xy;
+    double theta = std::atan2(diff.y(), diff.x());
+    double distance = diff.norm();
+    int point_num = distance / request.resolution;
+
+    request.start_pos.header.stamp = stamp;
+    path.poses.push_back(request.start_pos);
+
+    geometry_msgs::msg::PoseStamped add_point = request.start_pos;
+    double cos_t = std::cos(theta);
+    double sin_t = std::sin(theta);
+    for (int i = 0; i < point_num; i++)
+    {
+        add_point.pose.position.x += request.resolution * cos_t;
+        add_point.pose.position.y += request.resolution * sin_t;
+        add_point.header.stamp = stamp;
+        path.poses.push_back(add_point);
+    }
+    request.goal_pos.header.stamp = stamp;
+    path.poses.push_back(request.goal_pos);
 
     return path;
 }
