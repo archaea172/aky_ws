@@ -33,6 +33,7 @@ install(TARGETS lifecycle_server DESTINATION lib/${PROJECT_NAME})
 # bt library
 add_library(bt_library
   src/bt/lifecycle_bt.cpp
+  src/bt/leader_pos_bt.cpp
 )
 ament_target_dependencies(bt_library
   lifecycle_msgs

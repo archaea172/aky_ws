@@ -11,6 +11,7 @@
 
 #include "behaviortree_ros2/ros_node_params.hpp"
 #include "bt/lifecycle_bt.hpp"
+#include "bt/leader_pos_bt.hpp"
 
 int main(int argc, char ** argv)
 {
@@ -36,8 +37,15 @@ int main(int argc, char ** argv)
     lifecycle_params.server_timeout = std::chrono::milliseconds(wait_for_server_timeout_ms);
     lifecycle_params.wait_for_server_timeout = std::chrono::milliseconds(wait_for_server_timeout_ms);
     
+    BT::RosNodeParams leader_pos_params;
+    leader_pos_params.nh = node;
+    leader_pos_params.default_port_value = "leader_pos";
+    leader_pos_params.server_timeout = std::chrono::milliseconds(wait_for_server_timeout_ms);
+    leader_pos_params.wait_for_server_timeout = std::chrono::milliseconds(wait_for_server_timeout_ms);
+    
     
     factory.registerNodeType<LifecycleAction>("lifecycle_action", lifecycle_params);
+    factory.registerNodeType<LeaderPosAction>("leader_pos_action", leader_pos_params);
     BT::Tree tree = factory.createTreeFromFile(bt_xml_file);
     BT::StdCoutLogger logger_cout(tree);
     tree.tickWhileRunning();
