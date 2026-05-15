@@ -6,6 +6,14 @@ using namespace std::placeholders;
 LeaderPosServer::LeaderPosServer()
 : rclcpp::Node("leader_pos_server")
 {
+    rclcpp::QoS device = rclcpp::QoS(rclcpp::KeepLast(10))
+        .reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE)
+        .durability(RMW_QOS_POLICY_DURABILITY_VOLATILE);
+    this->leader_odom_publisher_ = this->create_publisher<nav_msgs::msg::Odometry>(
+        "leader/odometry",
+        device
+    );
+
     this->action_server_ = rclcpp_action::create_server<swerm_msgs::action::LeaderPos>(
         this,
         "leader_pos",
