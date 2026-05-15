@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root BTCPP_format="4">
+  <TreeNodesModel>
+    <Action ID="lifecycle_action" editable="true">
+      <input_port name="node_name"/>
+      <input_port name="state"/>
+    </Action>
+    <Action ID="leader_pos_action" editable="true">
+      <input_port name="start_x"/>
+      <input_port name="start_y"/>
+      <input_port name="goal_x"/>
+      <input_port name="goal_y"/>
+      <input_port name="max_speed"/>
+    </Action>
+  </TreeNodesModel>
+</root>
