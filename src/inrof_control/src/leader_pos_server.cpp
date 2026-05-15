@@ -37,7 +37,39 @@ rclcpp_action::GoalResponse LeaderPosServer::handle_goal(
     return rclcpp_action::GoalResponse::ACCEPT_AND_DEFER;
 }
 
+rclcpp_action::CancelResponse LeaderPosServer::handle_cancel(
+    const std::shared_ptr<GoalHandleLeaderPos> goal_handle
+)
+{
+    (void)goal_handle;
+    RCLCPP_INFO(this->get_logger(), "Received request to cancel goal");
+    return rclcpp_action::CancelResponse::ACCEPT;
+}
+
+void LeaderPosServer::handle_accepted(const std::shared_ptr<GoalHandleLeaderPos> goal_handle)
+{
+    RCLCPP_INFO(this->get_logger(), "Goal accepted. Start execution.");
+    goal_handle->execute();
+    std::thread{std::bind(&LeaderPosServer::execute, this, _1), goal_handle}.detach();
+}
+
+void LeaderPosServer::execute(const std::shared_ptr<GoalHandleLeaderPos> goal_handle)
+{
+
+}
+
 bool LeaderPosServer::is_out_of_map(geometry_msgs::msg::PoseStamped start_pos, geometry_msgs::msg::PoseStamped goal_pos)
 {
+    static_cast<void>(start_pos);
+    static_cast<void>(goal_pos);
     return false;
+}
+
+int main(int argc, char *argv[])
+{
+    rclcpp::init(argc, argv);
+    std::shared_ptr<LeaderPosServer> node = std::make_shared<LeaderPosServer>();
+    rclcpp::spin(node->get_node_base_interface());
+    rclcpp::shutdown();
+    return 0;
 }

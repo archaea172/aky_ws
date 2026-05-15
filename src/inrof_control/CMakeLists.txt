@@ -11,6 +11,7 @@ find_package(nav_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(swerm_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_action REQUIRED)
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 
 include_directories(
@@ -32,6 +33,21 @@ ament_target_dependencies(path_generate_server
 )
 install(
   TARGETS path_generate_server
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+add_executable(leader_pos_server
+  src/leader_pos_server.cpp
+)
+ament_target_dependencies(leader_pos_server
+  rclcpp
+  rclcpp_action
+  swerm_msgs
+  nav_msgs
+  geometry_msgs
+)
+install(
+  TARGETS leader_pos_server
   DESTINATION lib/${PROJECT_NAME}
 )
 
