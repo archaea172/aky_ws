@@ -32,4 +32,6 @@ private:
 
     rclcpp_action::Server<swerm_msgs::action::LeaderPos>::SharedPtr action_server_;
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr leader_odom_publisher_;
+
+    double publish_rate_ms;
 };

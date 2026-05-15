@@ -4,7 +4,8 @@ using namespace std::chrono_literals;
 using namespace std::placeholders;
 
 LeaderPosServer::LeaderPosServer()
-: rclcpp::Node("leader_pos_server")
+: rclcpp::Node("leader_pos_server"),
+publish_rate_ms(50)
 {
     rclcpp::QoS device = rclcpp::QoS(rclcpp::KeepLast(10))
         .reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE)
@@ -55,7 +56,69 @@ void LeaderPosServer::handle_accepted(const std::shared_ptr<GoalHandleLeaderPos>
 
 void LeaderPosServer::execute(const std::shared_ptr<GoalHandleLeaderPos> goal_handle)
 {
+    const std::shared_ptr<const swerm_msgs::action::LeaderPos_Goal> goal = goal_handle->get_goal();
+    swerm_msgs::action::LeaderPos::Result::SharedPtr result = std::make_shared<swerm_msgs::action::LeaderPos::Result>();
 
+    double one_cycle_distance = goal->max_speed * publish_rate_ms / 1000.0;
+
+    rclcpp::Client<swerm_msgs::srv::LeaderPath>::SharedPtr path_client = this->create_client<swerm_msgs::srv::LeaderPath>(
+        "leader_path_service"
+    );
+    swerm_msgs::srv::LeaderPath::Request::SharedPtr request = std::make_shared<swerm_msgs::srv::LeaderPath::Request>();
+    request->start_pos = goal->start_pos;
+    request->goal_pos = goal->goal_pos;
+    request->waypoints = goal->waypoints;
+    request->resolution = one_cycle_distance;
+
+    auto future = path_client->async_send_request(request);
+    while (rclcpp::ok() && future.wait_for(10ms) != std::future_status::ready)
+    {
+        if (goal_handle->is_canceling())
+        {
+            result->success = false;
+            result->msg = "goal canceled";
+            goal_handle->canceled(result);
+            return;
+        }
+    }
+
+    if (!rclcpp::ok())
+    {
+        result->success = false;
+        result->msg = "rclcpp shutdown";
+        goal_handle->abort(result);
+        return;
+    }
+
+    const auto response = future.get();
+    if (!response || response->route.poses.empty()) 
+    {
+            result->success = false;
+            result->msg = "path plan failed";
+            goal_handle->canceled(result);
+            return;
+    }
+
+    rclcpp::Rate loop_rate(1000.0 / publish_rate_ms);
+    nav_msgs::msg::Odometry txdata;
+    size_t i = 0;
+
+    while (rclcpp::ok())
+    {
+        txdata.header = response->route.poses[i].header;
+        txdata.pose.pose = response->route.poses[i].pose;
+        this->leader_odom_publisher_->publish(txdata);
+        ++i;
+        if (response->route.poses.size() <= i) {
+            RCLCPP_INFO(this->get_logger(), "finish move!");
+            break;
+        }
+        loop_rate.sleep();
+    }
+    
+    result->success = true;
+    result->msg = "goal succeeded";
+    goal_handle->succeed(result);
 }
 
 bool LeaderPosServer::is_out_of_map(geometry_msgs::msg::PoseStamped start_pos, geometry_msgs::msg::PoseStamped goal_pos)
