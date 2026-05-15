@@ -1,0 +1,83 @@
+#include "bt/leader_pos_bt.hpp"
+
+BT::PortsList LeaderPosAction::providedPorts()
+{
+    return providedBasicPorts({
+        BT::InputPort<double>("start_x"),
+        BT::InputPort<double>("start_y"),
+        BT::InputPort<double>("goal_x"),
+        BT::InputPort<double>("goal_y"),
+        BT::InputPort<double>("max_speed"),
+    });
+}
+
+bool LeaderPosAction::setGoal(Goal & goal)
+{
+    const auto start_x = getInput<double>("start_x");
+    if (!start_x) {
+        RCLCPP_ERROR(logger(), "Missing required input [start_x]: %s", start_x.error().c_str());
+        return false;
+    }
+
+    const auto start_y = getInput<double>("start_y");
+    if (!start_y) {
+        RCLCPP_ERROR(logger(), "Missing required input [start_y]: %s", start_y.error().c_str());
+        return false;
+    }
+
+    const auto goal_x = getInput<double>("goal_x");
+    if (!goal_x) {
+        RCLCPP_ERROR(logger(), "Missing required input [goal_x]: %s", goal_x.error().c_str());
+        return false;
+    }
+
+    const auto goal_y = getInput<double>("goal_y");
+    if (!goal_y) {
+        RCLCPP_ERROR(logger(), "Missing required input [goal_y]: %s", goal_y.error().c_str());
+        return false;
+    }
+
+    const auto max_speed = getInput<double>("max_speed");
+    if (!max_speed) {
+        RCLCPP_ERROR(logger(), "Missing required input [max_speed]: %s", max_speed.error().c_str());
+        return false;
+    }
+
+    goal.start_pos.pose.position.x = start_x.value();
+    goal.start_pos.pose.position.y = start_y.value();
+    goal.goal_pos.pose.position.x = goal_x.value();
+    goal.goal_pos.pose.position.y = goal_y.value();
+    goal.max_speed = static_cast<float>(max_speed.value());
+    return true;
+}
+
+BT::NodeStatus LeaderPosAction::onResultReceived(const WrappedResult & result)
+{
+    if (result.result && result.result->success) {
+        RCLCPP_INFO(logger(), "leader pos succeeded: %s", result.result->msg.c_str());
+        return BT::NodeStatus::SUCCESS;
+    }
+
+    RCLCPP_ERROR(
+        logger(),
+        "leader pos failed: %s",
+        result.result ? result.result->msg.c_str() : "empty result");
+    return BT::NodeStatus::FAILURE;
+}
+
+BT::NodeStatus LeaderPosAction::onFeedback(const std::shared_ptr<const Feedback> feedback)
+{
+    (void) feedback;
+    return BT::NodeStatus::RUNNING;
+}
+
+BT::NodeStatus LeaderPosAction::onFailure(BT::ActionNodeErrorCode error)
+{
+    RCLCPP_ERROR(logger(), "leader pos failed with error code: %d", static_cast<int>(error));
+    return BT::NodeStatus::FAILURE;
+}
+
+void LeaderPosAction::onHalt()
+{
+    RCLCPP_INFO(logger(), "Halting lifecycle goal");
+}
