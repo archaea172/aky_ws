@@ -11,15 +11,26 @@
         <lifecycle_action node_name="follower_node"
                           state="active"/>
       </Delay>
-      <Delay delay_msec="2000">
-        <lifecycle_action node_name="follower_node"
-                          state="inactive"/>
-      </Delay>
+      <leader_pos_action start_x="0.0"
+                         start_y="10.0"
+                         goal_x="5.0"
+                         goal_y="5.0"
+                         max_speed="0.2"/>
+      <lifecycle_action node_name="follower_node"
+                        state="inactive"/>
     </Sequence>
   </BehaviorTree>
 
   <!-- Description of Node Models (used by Groot) -->
   <TreeNodesModel>
+    <Action ID="leader_pos_action"
+            editable="true">
+      <input_port name="start_x"/>
+      <input_port name="start_y"/>
+      <input_port name="goal_x"/>
+      <input_port name="goal_y"/>
+      <input_port name="max_speed"/>
+    </Action>
     <Action ID="lifecycle_action"
             editable="true">
       <input_port name="node_name"/>
