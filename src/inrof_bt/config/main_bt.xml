@@ -12,10 +12,10 @@
                           state="active"/>
       </Delay>
       <leader_pos_action start_x="0.0"
-                         start_y="10.0"
+                         start_y="0.0"
                          goal_x="5.0"
                          goal_y="5.0"
-                         max_speed="0.2"/>
+                         max_speed="0.7"/>
       <lifecycle_action node_name="follower_node"
                         state="inactive"/>
     </Sequence>
