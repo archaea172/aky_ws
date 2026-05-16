@@ -1,5 +1,7 @@
 #include "ros/boid_node.hpp"
 
+#include <cmath>
+
 using namespace std::chrono_literals;
 
 boid_node::boid_node()
@@ -22,7 +24,7 @@ boid_node::boid_node()
 
     this->boid_core_ = std::make_unique<BoidCore>(boid_params_);
     
-    this->pos_matrix_ = Eigen::MatrixXd::Zero(2, this->boid_params_.boid_num);
+    this->pos_matrix_ = Eigen::MatrixXd::Zero(3, this->boid_params_.boid_num);
     this->vel_matrix_ = Eigen::MatrixXd::Zero(2, this->boid_params_.boid_num);
 
     rclcpp::QoS device = rclcpp::QoS(rclcpp::KeepLast(10))
@@ -64,19 +66,28 @@ void boid_node::odom_callback(int id, nav_msgs::msg::Odometry::ConstSharedPtr rx
         return;
     }
 
-    this->pos_matrix_.col(id) << rxdata->pose.pose.position.x, rxdata->pose.pose.position.y;
+    const auto& position = rxdata->pose.pose.position;
+    const auto& orientation = rxdata->pose.pose.orientation;
+    this->pos_matrix_(0, id) = position.x;
+    this->pos_matrix_(1, id) = position.y;
+    this->pos_matrix_(2, id) = std::atan2(
+        2.0 * (orientation.w * orientation.z + orientation.x * orientation.y),
+        1.0 - 2.0 * (orientation.y * orientation.y + orientation.z * orientation.z)
+    );
     this->vel_matrix_.col(id) << rxdata->twist.twist.linear.x, rxdata->twist.twist.linear.y;
 }
 
 void boid_node::control_callback()
 {
-    Eigen::MatrixXd cmd_vels = this->boid_core_->update_vels(pos_matrix_, vel_matrix_);
+    Eigen::MatrixXd cmd_vels = this->boid_core_->update_vels(pos_matrix_.topRows(2), vel_matrix_);
     
     for (int i = 0; i < this->boid_params_.boid_num; ++i)
     {
+        Eigen::Rotation2Dd rotation(-pos_matrix_(2, i));
+        Eigen::Vector2d  cmd_vels_i_robot = rotation * cmd_vels.col(i);
         geometry_msgs::msg::Twist txdata;
-        txdata.linear.x = cmd_vels(0, i);
-        txdata.linear.y = cmd_vels(1, i);
+        txdata.linear.x = cmd_vels_i_robot(0);
+        txdata.linear.y = cmd_vels_i_robot(1);
 
         this->cmd_vel_publishers_[i]->publish(txdata);
     }
