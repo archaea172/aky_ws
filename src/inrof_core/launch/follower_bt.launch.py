@@ -23,7 +23,7 @@ def generate_launch_description():
     map_yaml = os.path.join(
         get_package_share_directory('inrof_swerm'),
         'map',
-        'irc.yaml'
+        'plane_wall.yaml'
     )
 
     follower_node = Node(
@@ -72,6 +72,15 @@ def generate_launch_description():
     ld.add_action(map_server_node)
     ld.add_action(map_configure_event_handler)
     ld.add_action(map_activate_event_handler)
+
+    static_from_map_to_odom = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        name="static_transform_publisher",
+        output="screen",
+        arguments=['0', '0', '0', '0', '0', '0', 'map', 'odom']
+    )
+    ld.add_action(static_from_map_to_odom)
 
     leader_pos_server_node = Node(
         package='inrof_control',

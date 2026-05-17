@@ -61,20 +61,42 @@
         <model name="sandbox_walls">
             <static>true</static>
 
-            <!-- north wall -->
-            <link name="north_wall">
-                <pose>2.0 5.5 0.175 0 0 0</pose>
+            <!-- north wall with centered opening -->
+            <link name="north_wall_left">
+                <pose>0.0 5.5 0.175 0 0 0</pose>
                 <collision name="collision">
                     <geometry>
                         <box>
-                            <size>7.0 0.15 0.35</size>
+                            <size>3.0 0.15 0.35</size>
                         </box>
                     </geometry>
                 </collision>
                 <visual name="visual">
                     <geometry>
                         <box>
-                            <size>7.0 0.15 0.35</size>
+                            <size>3.0 0.15 0.35</size>
+                        </box>
+                    </geometry>
+                    <material>
+                        <ambient>0.45 0.36 0.25 1</ambient>
+                        <diffuse>0.45 0.36 0.25 1</diffuse>
+                    </material>
+                </visual>
+            </link>
+
+            <link name="north_wall_right">
+                <pose>4.0 5.5 0.175 0 0 0</pose>
+                <collision name="collision">
+                    <geometry>
+                        <box>
+                            <size>3.0 0.15 0.35</size>
+                        </box>
+                    </geometry>
+                </collision>
+                <visual name="visual">
+                    <geometry>
+                        <box>
+                            <size>3.0 0.15 0.35</size>
                         </box>
                     </geometry>
                     <material>
