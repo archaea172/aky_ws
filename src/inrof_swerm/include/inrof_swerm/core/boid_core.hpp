@@ -15,6 +15,16 @@ struct BoidPrams
     double Ir_min;
 };
 
+struct GridMap
+{
+    double resolution;
+    double origin_x;
+    double origin_y;
+    int width;
+    int height;
+    std::vector<int8_t> data;
+};
+
 Eigen::MatrixXd remove_col(const Eigen::MatrixXd& A, int k);
 
 class BoidCore
