@@ -25,6 +25,15 @@ struct GridMap
     std::vector<int8_t> data;
 };
 
+struct DistanceFieldMap {
+    double resolution;
+    double origin_x;
+    double origin_y;
+    int width;
+    int height;
+    Eigen::ArrayXXf distance;
+};
+
 Eigen::MatrixXd remove_col(const Eigen::MatrixXd& A, int k);
 
 class BoidCore
