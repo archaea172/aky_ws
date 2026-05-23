@@ -3,6 +3,7 @@
 #include <Eigen/Dense>
 #include <atomic>
 #include <vector>
+#include <queue>
 
 struct BoidPrams
 {

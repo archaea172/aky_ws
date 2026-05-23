@@ -117,3 +117,38 @@ Eigen::Vector2d BoidCore::make_gravity_power(const Eigen::Vector2d& x_i, const E
 
     return -vel;
 }
+
+DistanceFieldMap BoidCore::make_distance_field(const GridMap& map)
+{
+    const int w = map.width;
+    const int h = map.height;
+    const float inf = std::numeric_limits<float>::infinity();
+
+    DistanceFieldMap field;
+    field.resolution = map.resolution;
+    field.origin_x = map.origin_x;
+    field.origin_y = map.origin_y;
+    field.width = w;
+    field.height = h;
+    field.distance = Eigen::ArrayXXf::Constant(h, w, inf);
+
+    auto idx = [w](int x, int y) {
+        return y * w + x;
+    };
+    using Item = std::pair<float, int>;
+    std::priority_queue<Item, std::vector<Item>, std::greater<Item>> queue;
+    
+    for (int y = 0; y < h; ++y)
+    {
+        for (int x = 0; x < w; ++x)
+        {
+            int i = idx(x, y);
+
+            if (map.data[i] >= 65)
+            {
+                
+                queue.push({0.0f, i});
+            }
+        }
+    }
+}
