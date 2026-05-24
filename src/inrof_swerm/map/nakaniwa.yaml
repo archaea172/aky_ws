@@ -1,0 +1,6 @@
+image: nakaniwa.pgm
+resolution: 0.05
+origin: [-4.880000, -5.906955, 0.0]
+negate: 0
+occupied_thresh: 0.65
+free_thresh: 0.196

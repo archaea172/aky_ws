@@ -10,6 +10,17 @@ PYBIND11_MODULE(_core, m)
 {
     m.doc() = "Python bindings for inrof_swerm";
 
+    pybind11::class_<DistanceFieldMap>(
+        m, "DistanceFieldMap",
+        "Distance field map for wall avoidance.")
+        .def(pybind11::init<>(), "Create an empty distance field map.")
+        .def_readwrite("resolution", &DistanceFieldMap::resolution, "Resolution of the map.")
+        .def_readwrite("origin_x", &DistanceFieldMap::origin_x, "X coordinate of the map origin.")
+        .def_readwrite("origin_y", &DistanceFieldMap::origin_y, "Y coordinate of the map origin.")
+        .def_readwrite("width", &DistanceFieldMap::width, "Width of the map in cells.")
+        .def_readwrite("height", &DistanceFieldMap::height, "Height of the map in cells.")
+        .def_readwrite("distance", &DistanceFieldMap::distance, "2D array of distances to the nearest obstacle.");
+
     pybind11::class_<BoidPrams>(
         m, "BoidPrams",
         "Parameters controlling boid swarm velocity updates.")
@@ -19,6 +30,8 @@ PYBIND11_MODULE(_core, m)
         .def_readwrite("k_separation", &BoidPrams::k_separation, "Separation force gain.")
         .def_readwrite("k_alignment", &BoidPrams::k_alignment, "Alignment force gain.")
         .def_readwrite("k_gravity", &BoidPrams::k_gravity, "Cohesion force gain.")
+        .def_readwrite("k_wall", &BoidPrams::k_wall, "Wall avoidance force gain.")
+        .def_readwrite("field", &BoidPrams::field, "Distance field map for wall avoidance.")
         .def_readwrite("Ir", &BoidPrams::Ir, "Interaction radius.")
         .def_readwrite("Ir_min", &BoidPrams::Ir_min, "Minimum interaction radius.");
 
