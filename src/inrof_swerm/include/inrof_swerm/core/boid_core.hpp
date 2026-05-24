@@ -3,6 +3,7 @@
 #include <Eigen/Dense>
 #include <atomic>
 #include <vector>
+#include <queue>
 
 struct GridMap
 {
@@ -35,6 +36,7 @@ struct BoidPrams
 };
 
 Eigen::MatrixXd remove_col(const Eigen::MatrixXd& A, int k);
+DistanceFieldMap convertmap_grid_to_distance(const GridMap& map);
 
 class BoidCore
 {

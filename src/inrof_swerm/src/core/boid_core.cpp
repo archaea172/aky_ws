@@ -8,6 +8,83 @@ Eigen::MatrixXd remove_col(const Eigen::MatrixXd& A, int k)
     return B;
 }
 
+DistanceFieldMap convertmap_grid_to_distance(const GridMap& map)
+{
+    DistanceFieldMap field;
+    const int w = map.width;
+    const int h = map.height;
+    const float inf = std::numeric_limits<float>::infinity();
+
+    field.resolution = map.resolution;
+    field.origin_x = map.origin_x;
+    field.origin_y = map.origin_y;
+    field.width = w;
+    field.height = h;
+
+    field.distance = Eigen::ArrayXXf::Constant(h, w, inf);
+
+    auto idx = [w](int x, int y) {
+        return y * w + x;
+    };
+
+    using Item = std::pair<float, Eigen::Array2i>;
+    struct CompareItem {
+        bool operator()(const Item& a, const Item& b) const {
+            return a.first > b.first;
+        }
+    };
+    std::priority_queue<Item, std::vector<Item>, CompareItem> queue;
+
+    for (int y = 0; y < h; ++y)
+    {
+        for (int x = 0; x < w; ++x)
+        {
+            int i = idx(x, y);
+
+            if (map.data[i] >= 65)
+            {
+                field.distance(y, x) = 0.0f;
+                Eigen::Array2i xy = {x, y};
+                queue.push({0.0f, xy});
+            }
+        }
+    }
+
+    const std::array<std::pair<int, int>, 8> dirs = {{
+        {-1,  0}, {1,  0}, {0, -1}, {0, 1},
+        {-1, -1}, {1, -1}, {-1, 1}, {1, 1}
+    }};
+
+    while (!queue.empty())
+    {
+        auto [d, xy] = queue.top();
+        queue.pop();
+
+        if (d > field.distance(xy.y(), xy.x())) continue;
+
+        for (auto [dx, dy] : dirs)
+        {
+            int nx = xy.x() + dx;
+            int ny = xy.y() + dy;
+            if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+
+            float step = (dx != 0 && dy != 0)
+                ? static_cast<float>(map.resolution * std::sqrt(2.0))
+                : static_cast<float>(map.resolution);
+            
+            float nd = d + step;
+
+            if (nd < field.distance(ny, nx))
+            {
+                field.distance(ny, nx) = nd;
+                Eigen::Array2i nxy = {nx, ny};
+                queue.push({nd, nxy});
+            }
+        }
+    }
+    return field;
+}
+
 BoidCore::BoidCore(const BoidPrams& params)
 : boid_params_(params)
 {
