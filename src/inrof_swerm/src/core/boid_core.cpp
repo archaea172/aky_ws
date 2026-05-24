@@ -97,7 +97,8 @@ Eigen::Vector2d BoidCore::make_base_power(const Eigen::Vector2d& x_i, const Eige
     return
         this->boid_params_.k_separation * this->make_separation_power(x_i, x_j) +
         this->boid_params_.k_alignment * this->make_alignment_power(x_i, x_j, v_j) +
-        this->boid_params_.k_gravity * this->make_gravity_power(x_i, x_j);
+        this->boid_params_.k_gravity * this->make_gravity_power(x_i, x_j) +
+        this->boid_params_.k_wall * this->make_wall_power(x_i);
 }
 
 Eigen::MatrixXd BoidCore::update_vels(const Eigen::MatrixXd& pos_matrix, const Eigen::MatrixXd& vel_matrix)
@@ -193,4 +194,44 @@ Eigen::Vector2d BoidCore::make_gravity_power(const Eigen::Vector2d& x_i, const E
     if (in_num != 0) vel = sum / in_num;
 
     return -vel;
+}
+
+Eigen::Vector2d BoidCore::make_wall_power(const Eigen::Vector2d& x_i)
+{
+    DistanceFieldMap field = this->boid_params_.field;
+    const int mx = static_cast<int>(
+        std::floor((x_i.x() - field.origin_x) / field.resolution)
+    );
+    const int my = static_cast<int>(
+        std::floor((x_i.y() - field.origin_y) / field.resolution)
+    );
+
+    if (mx <= 0 || mx >= field.width - 1 || my <= 0 || my >= field.height - 1)
+    {
+        return Eigen::Vector2d::Zero();
+    }
+
+    const double d = field.distance(my, mx);
+    if (!std::isfinite(d)) return Eigen::Vector2d::Zero();
+
+    const double wall_range = boid_params_.Ir;
+    if (d >= wall_range) {
+        return Eigen::Vector2d::Zero();
+    }
+
+    const double r = field.resolution;
+
+    const double grad_x =
+        (field.distance(my, mx + 1) - field.distance(my, mx - 1)) / (2.0 * r);
+
+    const double grad_y =
+        (field.distance(my + 1, mx) - field.distance(my - 1, mx)) / (2.0 * r);
+
+    Eigen::Vector2d grad(grad_x, grad_y);
+
+    if (grad.norm() < 1e-6) return Eigen::Vector2d::Zero();
+
+    const Eigen::Vector2d dir = grad.normalized();
+
+    return dir;
 }

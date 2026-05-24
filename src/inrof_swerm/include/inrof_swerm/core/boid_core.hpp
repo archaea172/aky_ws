@@ -31,6 +31,8 @@ struct BoidPrams
     double k_separation;
     double k_alignment;
     double k_gravity;
+    double k_wall;
+    DistanceFieldMap field;
     double Ir;
     double Ir_min;
 };
@@ -55,4 +57,5 @@ private:
     Eigen::Vector2d make_separation_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j);
     Eigen::Vector2d make_alignment_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j, const Eigen::MatrixXd& v_j);
     Eigen::Vector2d make_gravity_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j);
+    Eigen::Vector2d make_wall_power(const Eigen::Vector2d& x_i);
 };
