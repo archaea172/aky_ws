@@ -8,3 +8,4 @@ follower_node:
     k_alignment: 15.0
     k_gravity: 5.0
     k_follow: 20.0
+    k_wall: 20.0
