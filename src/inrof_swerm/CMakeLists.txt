@@ -59,18 +59,18 @@ target_link_libraries(inrof_swerm_ros
   Eigen3::Eigen
 )
 
-add_executable(boid_node
-  src/boid_main.cpp
-)
+# add_executable(boid_node
+#   src/boid_main.cpp
+# )
 
-target_link_libraries(boid_node
-  inrof_swerm_ros
-)
+# target_link_libraries(boid_node
+#   inrof_swerm_ros
+# )
 
-install(
-  TARGETS boid_node
-  DESTINATION lib/${PROJECT_NAME}
-)
+# install(
+#   TARGETS boid_node
+#   DESTINATION lib/${PROJECT_NAME}
+# )
 
 add_executable(follower_node
   src/follower_main.cpp
@@ -85,18 +85,18 @@ install(
   DESTINATION lib/${PROJECT_NAME}
 )
 
-add_executable(sheep_node
-  src/sheep_main.cpp
-)
+# add_executable(sheep_node
+#   src/sheep_main.cpp
+# )
 
-target_link_libraries(sheep_node
-  inrof_swerm_ros
-)
+# target_link_libraries(sheep_node
+#   inrof_swerm_ros
+# )
 
-install(
-  TARGETS sheep_node
-  DESTINATION lib/${PROJECT_NAME}
-)
+# install(
+#   TARGETS sheep_node
+#   DESTINATION lib/${PROJECT_NAME}
+# )
 
 install(
   DIRECTORY config map
