@@ -4,6 +4,7 @@
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 
 #include "nav_msgs/msg/odometry.hpp"
+#include "nav_msgs/msg/occupancy_grid.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 
 #include "core/follower_core.hpp"
@@ -22,6 +23,7 @@ private:
 
     void odom_callback(int id, nav_msgs::msg::Odometry::ConstSharedPtr rxdata);
     void leader_odom_callback(nav_msgs::msg::Odometry::ConstSharedPtr rxdata);
+    void map_callback(nav_msgs::msg::OccupancyGrid::ConstSharedPtr rxdata);
     void control_callback();
     
     CallbackReturn on_configure(const rclcpp_lifecycle::State &state);
@@ -41,9 +43,12 @@ private:
     std::vector<rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr> cmd_vel_publishers_;
     std::vector<rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr> odom_subscribers_;
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr leader_pos_subscriber_;
+    rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_subscriber_;
     nav_msgs::msg::Odometry leader_odom_;
     rclcpp::TimerBase::SharedPtr control_timer_;
     Eigen::MatrixXd pos_matrix_;
     Eigen::MatrixXd vel_matrix_;
     Eigen::Vector2d leader_pos_;
+
+    bool receive_map_{false};
 };

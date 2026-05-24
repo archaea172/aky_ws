@@ -31,6 +31,15 @@ follower_node::CallbackReturn follower_node::on_configure(const rclcpp_lifecycle
         std::bind(&follower_node::parameters_callback, this, std::placeholders::_1)
     );
 
+    rclcpp::QoS map = rclcpp::QoS(rclcpp::KeepLast(1))
+        .reliable()
+        .transient_local();
+    this->map_subscriber_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
+        "map",
+        map,
+        std::bind(&follower_node::map_callback, this, std::placeholders::_1)
+    );
+
     this->pos_matrix_ = Eigen::MatrixXd::Zero(2, this->boid_params_.boid_num);
     this->vel_matrix_ = Eigen::MatrixXd::Zero(2, this->boid_params_.boid_num);
     this->leader_pos_ = Eigen::Vector2d::Zero();
@@ -45,6 +54,12 @@ follower_node::CallbackReturn follower_node::on_configure(const rclcpp_lifecycle
 
 follower_node::CallbackReturn follower_node::on_activate(const rclcpp_lifecycle::State &state)
 {
+    if (!receive_map_)
+    {
+        RCLCPP_WARN(this->get_logger(), "mapserver is not available!");
+        return CallbackReturn::FAILURE;
+    }
+
     this->follower_core_ = std::make_unique<FollowerCore>(boid_params_, k_follow_);
     rclcpp::QoS device = rclcpp::QoS(rclcpp::KeepLast(10))
         .reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE)
@@ -245,6 +260,11 @@ void follower_node::control_callback()
 
         this->cmd_vel_publishers_[i]->publish(txdata);
     }
+}
+
+void follower_node::map_callback(nav_msgs::msg::OccupancyGrid::ConstSharedPtr rxdata)
+{
+    receive_map_ = true;
 }
 
 void follower_node::control_stop()
