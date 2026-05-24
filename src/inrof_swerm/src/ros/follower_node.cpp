@@ -260,3 +260,79 @@ void follower_node::control_stop()
         publisher->publish(txdata);
     }
 }
+
+DistanceFieldMap follower_node::make_distance_field(const GridMap& map)
+{
+    const int w = map.width;
+    const int h = map.height;
+    const float inf = std::numeric_limits<float>::infinity();
+
+    DistanceFieldMap field;
+    field.resolution = map.resolution;
+    field.origin_x = map.origin_x;
+    field.origin_y = map.origin_y;
+    field.width = w;
+    field.height = h;
+    field.distance = Eigen::ArrayXXf::Constant(h, w, inf);
+
+    auto idx = [w](int x, int y) {
+        return y * w + x;
+    };
+    
+    using Item = std::pair<float, int>;
+    std::priority_queue<Item, std::vector<Item>, std::greater<Item>> queue;
+    
+    for (int y = 0; y < h; ++y)
+    {
+        for (int x = 0; x < w; ++x)
+        {
+            const int i = idx(x, y);
+
+            if (map.data[i] >= 65)
+            {
+                field.distance(y, x) = 0.0f;
+                queue.push({0.0f, i});
+            }
+        }
+    }
+
+    const std::array<std::pair<int, int>, 8> dirs = {{
+        {-1,  0}, {1,  0}, {0, -1}, {0, 1},
+        {-1, -1}, {1, -1}, {-1, 1}, {1, 1}
+    }};
+
+    while (!queue.empty())
+    {
+        const auto [d, i] = queue.top();
+        queue.pop();
+
+        const int x = i % w;
+        const int y = i / w;
+
+        if (d > field.distance(y, x)) {
+            continue;
+        }
+
+        for (const auto [dx, dy] : dirs) {
+            const int nx = x + dx;
+            const int ny = y + dy;
+
+            if (nx < 0 || nx >= w || ny < 0 || ny >= h) {
+                continue;
+            }
+
+            const float step = (dx != 0 && dy != 0)
+                ? static_cast<float>(map.resolution * std::sqrt(2.0))
+                : static_cast<float>(map.resolution);
+
+            const float nd = d + step;
+
+            if (nd < field.distance(ny, nx)) {
+                field.distance(ny, nx) = nd;
+                queue.push({nd, idx(nx, ny)});
+            }
+        }
+    }
+
+    return field;
+}

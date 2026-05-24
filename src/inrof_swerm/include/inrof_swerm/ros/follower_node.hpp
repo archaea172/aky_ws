@@ -4,6 +4,7 @@
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 
 #include "nav_msgs/msg/odometry.hpp"
+#include "nav_msgs/msg/grid_cells.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 
 #include "core/follower_core.hpp"
@@ -46,4 +47,6 @@ private:
     Eigen::MatrixXd pos_matrix_;
     Eigen::MatrixXd vel_matrix_;
     Eigen::Vector2d leader_pos_;
+    
+    DistanceFieldMap make_distance_field(const GridMap& map);
 };

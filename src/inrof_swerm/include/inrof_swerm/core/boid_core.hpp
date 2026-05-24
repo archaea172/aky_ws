@@ -5,18 +5,6 @@
 #include <vector>
 #include <queue>
 
-struct BoidPrams
-{
-    int boid_num;
-    double max_vel;
-    double k_separation;
-    double k_alignment;
-    double k_gravity;
-    double k_wall;
-    double Ir;
-    double Ir_min;
-};
-
 struct GridMap
 {
     double resolution;
@@ -34,6 +22,19 @@ struct DistanceFieldMap {
     int width;
     int height;
     Eigen::ArrayXXf distance;
+};
+
+struct BoidPrams
+{
+    int boid_num;
+    double max_vel;
+    double k_separation;
+    double k_alignment;
+    double k_gravity;
+    double k_wall;
+    double Ir;
+    double Ir_min;
+    DistanceFieldMap distance_map;
 };
 
 Eigen::MatrixXd remove_col(const Eigen::MatrixXd& A, int k);
@@ -56,5 +57,4 @@ private:
     Eigen::Vector2d make_alignment_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j, const Eigen::MatrixXd& v_j);
     Eigen::Vector2d make_gravity_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j);
     Eigen::Vector2d make_wall_power(const Eigen::Vector2d& x_i);
-    DistanceFieldMap make_distance_field(const GridMap& map);
 };
