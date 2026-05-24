@@ -1,4 +1,5 @@
 from ._core import (
+    DistanceFieldMap,
     BoidPrams,
     BoidCore,
     FollowerCore,
@@ -6,6 +7,7 @@ from ._core import (
 )
 
 __all__ = [
+    "DistanceFieldMap",
     "BoidPrams",
     "BoidCore",
     "FollowerCore",
