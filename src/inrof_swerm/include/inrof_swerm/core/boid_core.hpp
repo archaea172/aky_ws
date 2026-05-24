@@ -4,17 +4,6 @@
 #include <atomic>
 #include <vector>
 
-struct BoidPrams
-{
-    int boid_num;
-    double max_vel;
-    double k_separation;
-    double k_alignment;
-    double k_gravity;
-    double Ir;
-    double Ir_min;
-};
-
 struct GridMap
 {
     double resolution;
@@ -32,6 +21,17 @@ struct DistanceFieldMap {
     int width;
     int height;
     Eigen::ArrayXXf distance;
+};
+
+struct BoidPrams
+{
+    int boid_num;
+    double max_vel;
+    double k_separation;
+    double k_alignment;
+    double k_gravity;
+    double Ir;
+    double Ir_min;
 };
 
 Eigen::MatrixXd remove_col(const Eigen::MatrixXd& A, int k);
