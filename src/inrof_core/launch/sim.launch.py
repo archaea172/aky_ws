@@ -17,7 +17,7 @@ def generate_launch_description():
     world = os.path.join(
         get_package_share_directory('inrof_sim'),
         'worlds',
-        'plane.sdf'
+        'plane_wall.sdf'
     )
 
     gzserver_cmd = IncludeLaunchDescription(

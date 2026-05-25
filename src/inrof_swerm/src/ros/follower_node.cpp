@@ -15,6 +15,7 @@ follower_node::follower_node()
     this->declare_parameter<double>("k_alignment", 1.1);
     this->declare_parameter<double>("k_gravity", 0.5);
     this->declare_parameter<double>("k_follow", 0.5);
+    this->declare_parameter<double>("k_wall", 0.5);
 }
 
 follower_node::CallbackReturn follower_node::on_configure(const rclcpp_lifecycle::State &state)
@@ -26,6 +27,7 @@ follower_node::CallbackReturn follower_node::on_configure(const rclcpp_lifecycle
     this->boid_params_.k_separation = this->get_parameter("k_separation").as_double();
     this->boid_params_.k_alignment = this->get_parameter("k_alignment").as_double();
     this->boid_params_.k_gravity = this->get_parameter("k_gravity").as_double();
+    this->boid_params_.k_wall = this->get_parameter("k_wall").as_double();
     this->k_follow_ = this->get_parameter("k_follow").as_double();
     this->parameter_callback_handle_ = this->add_on_set_parameters_callback(
         std::bind(&follower_node::parameters_callback, this, std::placeholders::_1)
@@ -34,6 +36,17 @@ follower_node::CallbackReturn follower_node::on_configure(const rclcpp_lifecycle
     this->pos_matrix_ = Eigen::MatrixXd::Zero(2, this->boid_params_.boid_num);
     this->vel_matrix_ = Eigen::MatrixXd::Zero(2, this->boid_params_.boid_num);
     this->leader_pos_ = Eigen::Vector2d::Zero();
+
+    rclcpp::QoS map_qos = rclcpp::QoS(rclcpp::KeepLast(1))
+        .reliable()
+        .transient_local();
+
+    this->subscribe_map_ = false;
+    this->map_subscriber_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
+        "map",
+        map_qos,
+        std::bind(&follower_node::map_callback, this, std::placeholders::_1)
+    );
 
     RCLCPP_INFO(
         get_logger(),
@@ -45,6 +58,11 @@ follower_node::CallbackReturn follower_node::on_configure(const rclcpp_lifecycle
 
 follower_node::CallbackReturn follower_node::on_activate(const rclcpp_lifecycle::State &state)
 {
+    if (!subscribe_map_)
+    {
+        RCLCPP_WARN(this->get_logger(), "map server is not available!");
+        return CallbackReturn::FAILURE;
+    }
     this->follower_core_ = std::make_unique<FollowerCore>(boid_params_, k_follow_);
     rclcpp::QoS device = rclcpp::QoS(rclcpp::KeepLast(10))
         .reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE)
@@ -109,6 +127,7 @@ follower_node::CallbackReturn follower_node::on_deactivate(const rclcpp_lifecycl
 
 follower_node::CallbackReturn follower_node::on_cleanup(const rclcpp_lifecycle::State &state)
 {
+    this->map_subscriber_.reset();
     this->control_stop();
     this->pos_matrix_ = Eigen::MatrixXd::Zero(2, this->boid_params_.boid_num);
     this->vel_matrix_ = Eigen::MatrixXd::Zero(2, this->boid_params_.boid_num);
@@ -231,6 +250,23 @@ void follower_node::odom_callback(int id, nav_msgs::msg::Odometry::ConstSharedPt
 
     this->pos_matrix_.col(id) << rxdata->pose.pose.position.x, rxdata->pose.pose.position.y;
     this->vel_matrix_.col(id) << rxdata->twist.twist.linear.x, rxdata->twist.twist.linear.y;
+}
+
+void follower_node::map_callback(nav_msgs::msg::OccupancyGrid::ConstSharedPtr rxdata)
+{
+    if (subscribe_map_) return;
+    subscribe_map_ = true;
+    GridMap map;
+    map.height = rxdata->info.height;
+    map.width = rxdata->info.width;
+    map.origin_x = rxdata->info.origin.position.x;
+    map.origin_y = rxdata->info.origin.position.y;
+    map.resolution = rxdata->info.resolution;
+    map.data = rxdata->data;
+
+    DistanceFieldMap field = convertmap_grid_to_distance(map);
+
+    this->boid_params_.field = field;
 }
 
 void follower_node::control_callback()

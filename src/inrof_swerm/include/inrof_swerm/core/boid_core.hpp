@@ -3,6 +3,26 @@
 #include <Eigen/Dense>
 #include <atomic>
 #include <vector>
+#include <queue>
+
+struct GridMap
+{
+    double resolution;
+    double origin_x;
+    double origin_y;
+    int width;
+    int height;
+    std::vector<int8_t> data;
+};
+
+struct DistanceFieldMap {
+    double resolution;
+    double origin_x;
+    double origin_y;
+    int width;
+    int height;
+    Eigen::ArrayXXf distance;
+};
 
 struct BoidPrams
 {
@@ -11,11 +31,14 @@ struct BoidPrams
     double k_separation;
     double k_alignment;
     double k_gravity;
+    double k_wall;
+    DistanceFieldMap field;
     double Ir;
     double Ir_min;
 };
 
 Eigen::MatrixXd remove_col(const Eigen::MatrixXd& A, int k);
+DistanceFieldMap convertmap_grid_to_distance(const GridMap& map);
 
 class BoidCore
 {
@@ -34,4 +57,5 @@ private:
     Eigen::Vector2d make_separation_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j);
     Eigen::Vector2d make_alignment_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j, const Eigen::MatrixXd& v_j);
     Eigen::Vector2d make_gravity_power(const Eigen::Vector2d& x_i, const Eigen::MatrixXd& x_j);
+    Eigen::Vector2d make_wall_power(const Eigen::Vector2d& x_i);
 };

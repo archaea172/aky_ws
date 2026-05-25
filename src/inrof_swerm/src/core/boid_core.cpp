@@ -8,6 +8,83 @@ Eigen::MatrixXd remove_col(const Eigen::MatrixXd& A, int k)
     return B;
 }
 
+DistanceFieldMap convertmap_grid_to_distance(const GridMap& map)
+{
+    DistanceFieldMap field;
+    const int w = map.width;
+    const int h = map.height;
+    const float inf = std::numeric_limits<float>::infinity();
+
+    field.resolution = map.resolution;
+    field.origin_x = map.origin_x;
+    field.origin_y = map.origin_y;
+    field.width = w;
+    field.height = h;
+
+    field.distance = Eigen::ArrayXXf::Constant(h, w, inf);
+
+    auto idx = [w](int x, int y) {
+        return y * w + x;
+    };
+
+    using Item = std::pair<float, Eigen::Array2i>;
+    struct CompareItem {
+        bool operator()(const Item& a, const Item& b) const {
+            return a.first > b.first;
+        }
+    };
+    std::priority_queue<Item, std::vector<Item>, CompareItem> queue;
+
+    for (int y = 0; y < h; ++y)
+    {
+        for (int x = 0; x < w; ++x)
+        {
+            int i = idx(x, y);
+
+            if (map.data[i] >= 65)
+            {
+                field.distance(y, x) = 0.0f;
+                Eigen::Array2i xy = {x, y};
+                queue.push({0.0f, xy});
+            }
+        }
+    }
+
+    const std::array<std::pair<int, int>, 8> dirs = {{
+        {-1,  0}, {1,  0}, {0, -1}, {0, 1},
+        {-1, -1}, {1, -1}, {-1, 1}, {1, 1}
+    }};
+
+    while (!queue.empty())
+    {
+        auto [d, xy] = queue.top();
+        queue.pop();
+
+        if (d > field.distance(xy.y(), xy.x())) continue;
+
+        for (auto [dx, dy] : dirs)
+        {
+            int nx = xy.x() + dx;
+            int ny = xy.y() + dy;
+            if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+
+            float step = (dx != 0 && dy != 0)
+                ? static_cast<float>(map.resolution * std::sqrt(2.0))
+                : static_cast<float>(map.resolution);
+            
+            float nd = d + step;
+
+            if (nd < field.distance(ny, nx))
+            {
+                field.distance(ny, nx) = nd;
+                Eigen::Array2i nxy = {nx, ny};
+                queue.push({nd, nxy});
+            }
+        }
+    }
+    return field;
+}
+
 BoidCore::BoidCore(const BoidPrams& params)
 : boid_params_(params)
 {
@@ -20,7 +97,8 @@ Eigen::Vector2d BoidCore::make_base_power(const Eigen::Vector2d& x_i, const Eige
     return
         this->boid_params_.k_separation * this->make_separation_power(x_i, x_j) +
         this->boid_params_.k_alignment * this->make_alignment_power(x_i, x_j, v_j) +
-        this->boid_params_.k_gravity * this->make_gravity_power(x_i, x_j);
+        this->boid_params_.k_gravity * this->make_gravity_power(x_i, x_j) +
+        this->boid_params_.k_wall * this->make_wall_power(x_i);
 }
 
 Eigen::MatrixXd BoidCore::update_vels(const Eigen::MatrixXd& pos_matrix, const Eigen::MatrixXd& vel_matrix)
@@ -116,4 +194,44 @@ Eigen::Vector2d BoidCore::make_gravity_power(const Eigen::Vector2d& x_i, const E
     if (in_num != 0) vel = sum / in_num;
 
     return -vel;
+}
+
+Eigen::Vector2d BoidCore::make_wall_power(const Eigen::Vector2d& x_i)
+{
+    DistanceFieldMap field = this->boid_params_.field;
+    const int mx = static_cast<int>(
+        std::floor((x_i.x() - field.origin_x) / field.resolution)
+    );
+    const int my = static_cast<int>(
+        std::floor((x_i.y() - field.origin_y) / field.resolution)
+    );
+
+    if (mx <= 0 || mx >= field.width - 1 || my <= 0 || my >= field.height - 1)
+    {
+        return Eigen::Vector2d::Zero();
+    }
+
+    const double d = field.distance(my, mx);
+    if (!std::isfinite(d)) return Eigen::Vector2d::Zero();
+
+    const double wall_range = boid_params_.Ir;
+    if (d >= wall_range) {
+        return Eigen::Vector2d::Zero();
+    }
+
+    const double r = field.resolution;
+
+    const double grad_x =
+        (field.distance(my, mx + 1) - field.distance(my, mx - 1)) / (2.0 * r);
+
+    const double grad_y =
+        (field.distance(my + 1, mx) - field.distance(my - 1, mx)) / (2.0 * r);
+
+    Eigen::Vector2d grad(grad_x, grad_y);
+
+    if (grad.norm() < 1e-6) return Eigen::Vector2d::Zero();
+
+    const Eigen::Vector2d dir = grad.normalized();
+
+    return dir;
 }

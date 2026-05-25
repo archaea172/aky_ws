@@ -99,7 +99,7 @@ install(
 )
 
 install(
-  DIRECTORY config
+  DIRECTORY config map
   DESTINATION share/${PROJECT_NAME}
 )
 
