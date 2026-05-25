@@ -1,7 +1,7 @@
 import os
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
+from launch.actions import AppendEnvironmentVariable, DeclareLaunchArgument
 from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
@@ -15,10 +15,17 @@ def generate_launch_description():
 
     ros_gz_sim = get_package_share_directory('ros_gz_sim')
     world = os.path.join(
-        get_package_share_directory('inrof_sim'),
+        get_package_share_directory('irc_table'),
         'worlds',
-        'plane_wall.sdf'
+        'irc_table.sdf'
     )
+
+    set_env_vars_resources = AppendEnvironmentVariable(
+            'GZ_SIM_RESOURCE_PATH',
+            os.path.join(
+                get_package_share_directory('irc_table'),
+                'models'))
+    ld.add_action(set_env_vars_resources)
 
     gzserver_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -36,6 +43,17 @@ def generate_launch_description():
     )
     ld.add_action(gzclient_cmd)
 
+    spawn_balls_cmd = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(
+                get_package_share_directory('irc_table'),
+                'launch',
+                'spawn_random_balls.launch.py'
+            )
+        )
+    )
+    ld.add_action(spawn_balls_cmd)
+
     robot_description_content = Command(
         [
             PathJoinSubstitution([FindExecutable(name="xacro")]),
@@ -51,20 +69,21 @@ def generate_launch_description():
         ]
     )
     robot_description = {"robot_description": robot_description_content}
-    ROBOT_NUM = 20
-    GRID_COLUMNS = 5
-    GRID_SPACING = 0.5
-    ROBOT_Z = 0.05
-    world_name = 'plane_world'
+    ROBOT_NUM = 5
+    ROBOT_Z = 0.4
+    world_name = 'irc_table'
     gz_twist_type = 'ignition.msgs.Twist'
     bridge_arguments = []
     bridge_remappings = []
 
+    # todo
+    ROBOT_XY = [(i * 0.2, -0.25) for i in range(ROBOT_NUM)]
+
     for i in range(ROBOT_NUM):
         robot_name = f"robot_{i}"
         frame_prefix = f"{robot_name}/"
-        x = (i % GRID_COLUMNS) * GRID_SPACING
-        y = (i // GRID_COLUMNS) * GRID_SPACING
+        x = ROBOT_XY[i][0]
+        y = ROBOT_XY[i][1]
 
         robot_node = Node(
             package='robot_state_publisher',

@@ -1,7 +1,7 @@
 follower_node:
   ros__parameters:
-    boid_num: 20
-    max_vel: 0.5
+    boid_num: 5
+    max_vel: 0.1
     Ir: 100.0
     Ir_min: 0.01
     k_separation: 20.0
