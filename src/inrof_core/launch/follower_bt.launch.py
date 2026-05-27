@@ -23,7 +23,7 @@ def generate_launch_description():
     map_yaml = os.path.join(
         get_package_share_directory('inrof_swerm'),
         'map',
-        'plane_wall.yaml'
+        'irc.yaml'
     )
 
     follower_node = Node(
