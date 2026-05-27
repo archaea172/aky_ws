@@ -15,7 +15,7 @@
                          start_y="-0.25"
                          goal_x="1.5"
                          goal_y="-0.25"
-                         max_speed="0.1"/>
+                         max_speed="0.05"/>
       <lifecycle_action node_name="follower_node"
                         state="inactive"/>
     </Sequence>

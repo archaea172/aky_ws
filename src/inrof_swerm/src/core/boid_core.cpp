@@ -231,7 +231,7 @@ Eigen::Vector2d BoidCore::make_wall_power(const Eigen::Vector2d& x_i)
 
     if (grad.norm() < 1e-6) return Eigen::Vector2d::Zero();
 
-    const Eigen::Vector2d dir = grad.normalized();
+    const Eigen::Vector2d dir = grad.normalized() / std::max(d, boid_params_.Ir_min);
 
     return dir;
 }
