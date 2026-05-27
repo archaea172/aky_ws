@@ -11,11 +11,11 @@
         <lifecycle_action node_name="follower_node"
                           state="active"/>
       </Delay>
-      <leader_pos_action start_x="2.0"
-                         start_y="0.0"
-                         goal_x="2.0"
-                         goal_y="10.0"
-                         max_speed="0.5"/>
+      <leader_pos_action start_x="-0.25"
+                         start_y="-0.25"
+                         goal_x="1.5"
+                         goal_y="-0.25"
+                         max_speed="0.1"/>
       <lifecycle_action node_name="follower_node"
                         state="inactive"/>
     </Sequence>
