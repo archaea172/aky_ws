@@ -1,4 +1,5 @@
 import os
+import random
 
 from launch import LaunchDescription
 from launch.actions import AppendEnvironmentVariable, DeclareLaunchArgument
@@ -76,8 +77,15 @@ def generate_launch_description():
     bridge_arguments = []
     bridge_remappings = []
 
-    # todo
-    ROBOT_XY = [(i * 0.2, -0.25) for i in range(ROBOT_NUM)]
+    min_distance_sq = 0.1 ** 2
+    ROBOT_XY = []
+    while len(ROBOT_XY) < ROBOT_NUM:
+        candidate = (random.uniform(-0.4, -0.1), random.uniform(-0.4, -0.1))
+        if all(
+            (candidate[0] - x) ** 2 + (candidate[1] - y) ** 2 >= min_distance_sq
+            for x, y in ROBOT_XY
+        ):
+            ROBOT_XY.append(candidate)
 
     for i in range(ROBOT_NUM):
         robot_name = f"robot_{i}"
