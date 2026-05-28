@@ -261,6 +261,11 @@ void follower_node::map_callback(nav_msgs::msg::OccupancyGrid::ConstSharedPtr rx
     map.width = rxdata->info.width;
     map.origin_x = rxdata->info.origin.position.x;
     map.origin_y = rxdata->info.origin.position.y;
+    const auto &orientation = rxdata->info.origin.orientation;
+    map.origin_yaw = std::atan2(
+        2.0 * (orientation.w * orientation.z + orientation.x * orientation.y),
+        1.0 - 2.0 * (orientation.y * orientation.y + orientation.z * orientation.z)
+    );
     map.resolution = rxdata->info.resolution;
     map.data = rxdata->data;
 
