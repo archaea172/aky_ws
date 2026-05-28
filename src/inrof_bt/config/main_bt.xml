@@ -13,8 +13,9 @@
       </Delay>
       <leader_pos_action start_x="-0.25"
                          start_y="-0.25"
-                         goal_x="1.5"
-                         goal_y="-0.25"
+                         goal_x="1.6"
+                         goal_y="-1.3"
+                         waypoints="0.25,-0.25;0.25,-1.3"
                          max_speed="0.05"/>
       <lifecycle_action node_name="follower_node"
                         state="inactive"/>
@@ -29,6 +30,7 @@
       <input_port name="start_y"/>
       <input_port name="goal_x"/>
       <input_port name="goal_y"/>
+      <input_port name="waypoints"/>
       <input_port name="max_speed"/>
     </Action>
     <Action ID="lifecycle_action"
