@@ -39,14 +39,22 @@ nav_msgs::msg::Path PathGenerateServer::gen_path(swerm_msgs::srv::LeaderPath::Re
     start_xy << request.start_pos.pose.position.x, request.start_pos.pose.position.y;
     Eigen::Vector2d goal_xy;
     goal_xy << request.goal_pos.pose.position.x, request.goal_pos.pose.position.y;
-    Eigen::Vector2d diff = goal_xy - start_xy;
+    std::vector<Eigen::Vector2d> waypoints_vector;
+    for (const auto &waypoint : request.waypoints)
+    {
+        Eigen::Vector2d waypoint_xy;
+        waypoint_xy << waypoint.pose.position.x, waypoint.pose.position.y;
+        waypoints_vector.push_back(waypoint_xy);
+    }
+    waypoints_vector.push_back(goal_xy);
+
+    Eigen::Vector2d diff = waypoints_vector[0] - start_xy;
     double theta = std::atan2(diff.y(), diff.x());
     double distance = diff.norm();
     int point_num = distance / request.resolution;
 
     request.start_pos.header.stamp = stamp;
     path.poses.push_back(request.start_pos);
-
     geometry_msgs::msg::PoseStamped add_point = request.start_pos;
     double cos_t = std::cos(theta);
     double sin_t = std::sin(theta);
@@ -57,6 +65,25 @@ nav_msgs::msg::Path PathGenerateServer::gen_path(swerm_msgs::srv::LeaderPath::Re
         add_point.header.stamp = stamp;
         path.poses.push_back(add_point);
     }
+
+    for (int i = 0; i < (int)request.waypoints.size(); i++)
+    {
+        diff = waypoints_vector[i+1] - waypoints_vector[i];
+        theta = std::atan2(diff.y(), diff.x());
+        distance = diff.norm();
+        point_num = distance / request.resolution;
+        cos_t = std::cos(theta);
+        sin_t = std::sin(theta);
+        for (int j = 0; j < point_num; j++)
+        {
+            add_point.pose.position.x += request.resolution * cos_t;
+            add_point.pose.position.y += request.resolution * sin_t;
+            add_point.header.stamp = stamp;
+            path.poses.push_back(add_point);
+        }
+    }
+
+    request.start_pos.header.stamp = stamp;
     request.goal_pos.header.stamp = stamp;
     path.poses.push_back(request.goal_pos);
 
