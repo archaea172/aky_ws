@@ -18,6 +18,7 @@ DistanceFieldMap convertmap_grid_to_distance(const GridMap& map)
     field.resolution = map.resolution;
     field.origin_x = map.origin_x;
     field.origin_y = map.origin_y;
+    field.origin_yaw = map.origin_yaw;
     field.width = w;
     field.height = h;
 
@@ -199,11 +200,21 @@ Eigen::Vector2d BoidCore::make_gravity_power(const Eigen::Vector2d& x_i, const E
 Eigen::Vector2d BoidCore::make_wall_power(const Eigen::Vector2d& x_i)
 {
     DistanceFieldMap field = this->boid_params_.field;
+    if (field.resolution <= 0.0 || field.width <= 2 || field.height <= 2 || field.distance.size() == 0)
+    {
+        return Eigen::Vector2d::Zero();
+    }
+    
+    double dx = x_i.x() - field.origin_x;
+    double dy = x_i.y() - field.origin_y;
+    double local_x =  cos(field.origin_yaw) * dx + sin(field.origin_yaw) * dy;
+    double local_y = -sin(field.origin_yaw) * dx + cos(field.origin_yaw) * dy;
+
     const int mx = static_cast<int>(
-        std::floor((x_i.x() - field.origin_x) / field.resolution)
+        std::floor(local_x / field.resolution)
     );
     const int my = static_cast<int>(
-        std::floor((x_i.y() - field.origin_y) / field.resolution)
+        std::floor(local_y / field.resolution)
     );
 
     if (mx <= 0 || mx >= field.width - 1 || my <= 0 || my >= field.height - 1)
@@ -231,7 +242,8 @@ Eigen::Vector2d BoidCore::make_wall_power(const Eigen::Vector2d& x_i)
 
     if (grad.norm() < 1e-6) return Eigen::Vector2d::Zero();
 
-    const Eigen::Vector2d dir = grad.normalized();
+    Eigen::Rotation2Dd map_to_world(field.origin_yaw);
+    const Eigen::Vector2d dir = (map_to_world * grad).normalized() / std::max(d, boid_params_.Ir_min);
 
     return dir;
 }

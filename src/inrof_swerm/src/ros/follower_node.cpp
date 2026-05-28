@@ -33,7 +33,7 @@ follower_node::CallbackReturn follower_node::on_configure(const rclcpp_lifecycle
         std::bind(&follower_node::parameters_callback, this, std::placeholders::_1)
     );
 
-    this->pos_matrix_ = Eigen::MatrixXd::Zero(2, this->boid_params_.boid_num);
+    this->pos_matrix_ = Eigen::MatrixXd::Zero(3, this->boid_params_.boid_num);
     this->vel_matrix_ = Eigen::MatrixXd::Zero(2, this->boid_params_.boid_num);
     this->leader_pos_ = Eigen::Vector2d::Zero();
 
@@ -129,7 +129,7 @@ follower_node::CallbackReturn follower_node::on_cleanup(const rclcpp_lifecycle::
 {
     this->map_subscriber_.reset();
     this->control_stop();
-    this->pos_matrix_ = Eigen::MatrixXd::Zero(2, this->boid_params_.boid_num);
+    this->pos_matrix_ = Eigen::MatrixXd::Zero(3, this->boid_params_.boid_num);
     this->vel_matrix_ = Eigen::MatrixXd::Zero(2, this->boid_params_.boid_num);
     this->leader_pos_ = Eigen::Vector2d::Zero();
     
@@ -248,7 +248,13 @@ void follower_node::odom_callback(int id, nav_msgs::msg::Odometry::ConstSharedPt
         return;
     }
 
-    this->pos_matrix_.col(id) << rxdata->pose.pose.position.x, rxdata->pose.pose.position.y;
+    const auto& orientation = rxdata->pose.pose.orientation;
+    const double yaw = std::atan2(
+        2.0 * (orientation.w * orientation.z + orientation.x * orientation.y),
+        1.0 - 2.0 * (orientation.y * orientation.y + orientation.z * orientation.z)
+    );
+
+    this->pos_matrix_.col(id) << rxdata->pose.pose.position.x, rxdata->pose.pose.position.y, yaw;
     this->vel_matrix_.col(id) << rxdata->twist.twist.linear.x, rxdata->twist.twist.linear.y;
 }
 
@@ -261,6 +267,11 @@ void follower_node::map_callback(nav_msgs::msg::OccupancyGrid::ConstSharedPtr rx
     map.width = rxdata->info.width;
     map.origin_x = rxdata->info.origin.position.x;
     map.origin_y = rxdata->info.origin.position.y;
+    const auto &orientation = rxdata->info.origin.orientation;
+    map.origin_yaw = std::atan2(
+        2.0 * (orientation.w * orientation.z + orientation.x * orientation.y),
+        1.0 - 2.0 * (orientation.y * orientation.y + orientation.z * orientation.z)
+    );
     map.resolution = rxdata->info.resolution;
     map.data = rxdata->data;
 
@@ -271,13 +282,15 @@ void follower_node::map_callback(nav_msgs::msg::OccupancyGrid::ConstSharedPtr rx
 
 void follower_node::control_callback()
 {
-    Eigen::MatrixXd cmd_vels = this->follower_core_->update_vels(pos_matrix_, vel_matrix_, this->leader_pos_);
+    Eigen::MatrixXd cmd_vels = this->follower_core_->update_vels(pos_matrix_.topRows(2), vel_matrix_, this->leader_pos_);
     
     for (int i = 0; i < this->boid_params_.boid_num; ++i)
     {
+        Eigen::Rotation2Dd rotation(-pos_matrix_(2, i));
+        Eigen::Vector2d  cmd_vels_i_robot = rotation * cmd_vels.col(i);
         geometry_msgs::msg::Twist txdata;
-        txdata.linear.x = cmd_vels(0, i);
-        txdata.linear.y = cmd_vels(1, i);
+        txdata.linear.x = cmd_vels_i_robot(0);
+        txdata.linear.y = cmd_vels_i_robot(1);
 
         this->cmd_vel_publishers_[i]->publish(txdata);
     }
