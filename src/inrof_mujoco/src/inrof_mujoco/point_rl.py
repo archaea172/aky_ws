@@ -79,11 +79,22 @@ class PointEnv(gym.Env):
         mujoco.mj_resetData(self.model, self.data)
         mujoco.mj_forward(self.model, self.data)
 
+        self.target_position = self.np_random.uniform(
+            low=np.array([-3.0, -3.0]),
+            high=np.array([3.5, 3.5]),
+        ).astype(np.float64)
+
+        target_body_id = self.model.body("target_body").id
+        self.model.body_pos[target_body_id, 0:2] = self.target_position
+        mujoco.mj_forward(self.model, self.data)
+
         self.step_count = 0
         self._update_robot_state()
 
         obs = self._get_obs()
-        info = {}
+        info = {
+            "target_position": self.target_position.copy(),
+        }
 
         return obs, info
     

@@ -6,8 +6,17 @@
   <worldbody>
     <light name="sun" pos="0 0 5"/>
     <geom name="floor" type="plane" size="5 5 0.1" rgba="0.8 0.8 0.8 1"/>
-    <geom name="target_marker" type="cylinder" pos="3.0 3.0 0.01" size="0.15 0.01" rgba="0.1 0.8 0.2 0.6" contype="0" conaffinity="0"/>
-
+    
+    <body name="target_body" pos="3.0 3.0 0.01">
+      <geom
+        name="target_marker"
+        type="cylinder"
+        size="0.15 0.01"
+        rgba="0.1 0.8 0.2 0.6"
+        contype="0"
+        conaffinity="0"
+      />
+    </body>
     
     <body name="robot_0" pos="0.0 0.0 0.05">
       <joint name="robot_0_x" type="slide" axis="1 0 0"/>
