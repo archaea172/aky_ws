@@ -19,7 +19,7 @@ class PointEnv(gym.Env):
 
         self.robot_num = robot_num
         self.step_count = 0
-        self.max_steps = 500
+        self.max_steps = 1000
         self.frame_skip = 5
         self.target_position = np.array([3.0, 3.0], dtype=np.float64)
         self.success_threshold = 0.25
