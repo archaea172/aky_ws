@@ -87,6 +87,21 @@ class PointEnv(gym.Env):
         target_body_id = self.model.body("target_body").id
         self.model.body_pos[target_body_id, 0:2] = self.target_position
         mujoco.mj_forward(self.model, self.data)
+        
+        boid_params = inrof_swerm.BoidPrams()
+        boid_params.boid_num = self.robot_num
+        boid_params.max_vel = 0.2
+        boid_params.Ir = 100.0
+        boid_params.Ir_min = 0.01
+        boid_params.k_separation = self.np_random.uniform(
+            low=0.1,
+            high=3.0,
+        )
+        boid_params.k_alignment = 1.1
+        boid_params.k_gravity = 1.0
+        boid_params.k_wall = 0.0
+
+        self.follower_core = inrof_swerm.FollowerCore(boid_params, 0.5)
 
         self.step_count = 0
         self._update_robot_state()
