@@ -19,7 +19,7 @@ class PointEnv(gym.Env):
 
         self.robot_num = robot_num
         self.step_count = 0
-        self.max_steps = 1000
+        self.max_steps = 600
         self.frame_skip = 5
         self.target_position = np.array([3.0, 3.0], dtype=np.float64)
         self.success_threshold = 0.25
@@ -191,9 +191,15 @@ def run_env_check(xml_path=DEFAULT_XML_PATH, robot_num=5):
 
 def train(total_timesteps=10_000, xml_path=DEFAULT_XML_PATH, robot_num=5, save_path=None):
     from stable_baselines3 import PPO
+    from stable_baselines3.common.env_util import make_vec_env
+    from stable_baselines3.common.vec_env import SubprocVecEnv
 
-    env = PointEnv(xml_path=xml_path, robot_num=robot_num)
-    model = PPO("MlpPolicy", env, verbose=1, device="cpu", n_steps=64, batch_size=64)
+    env = make_vec_env(
+        lambda: PointEnv(xml_path=xml_path, robot_num=robot_num),
+        n_envs=8,
+        vec_env_cls=SubprocVecEnv,
+    )
+    model = PPO("MlpPolicy", env, verbose=1, device="cpu", n_steps=128, batch_size=256)
     model.learn(total_timesteps=total_timesteps)
 
     if save_path is not None:
