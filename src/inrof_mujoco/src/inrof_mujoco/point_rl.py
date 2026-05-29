@@ -3,12 +3,18 @@ import numpy as np
 import mujoco
 from gymnasium import spaces
 import inrof_swerm
+from pathlib import Path
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_XML_PATH = PROJECT_ROOT / "models" / "point.xml"
+
 
 class PointEnv(gym.Env):
-    def __init__(self, xml_path, robot_num=5):
+    def __init__(self, xml_path=DEFAULT_XML_PATH, robot_num=5):
         super().__init__()
 
-        self.model = mujoco.MjModel.from_xml_path(xml_path)
+        self.model = mujoco.MjModel.from_xml_path(str(xml_path))
         self.data = mujoco.MjData(self.model)
 
         self.robot_num = robot_num
@@ -148,3 +154,51 @@ class PointEnv(gym.Env):
 
         self._robot_vel_matrix[0, :] = self.data.qvel[self.robot_x_qvel_ids]
         self._robot_vel_matrix[1, :] = self.data.qvel[self.robot_y_qvel_ids]
+
+
+def run_env_check(xml_path=DEFAULT_XML_PATH, robot_num=5):
+    from stable_baselines3.common.env_checker import check_env
+
+    env = PointEnv(xml_path=xml_path, robot_num=robot_num)
+    check_env(env, warn=True)
+
+
+def train(total_timesteps=10_000, xml_path=DEFAULT_XML_PATH, robot_num=5, save_path=None):
+    from stable_baselines3 import PPO
+
+    env = PointEnv(xml_path=xml_path, robot_num=robot_num)
+    model = PPO("MlpPolicy", env, verbose=1, device="cpu", n_steps=64, batch_size=64)
+    model.learn(total_timesteps=total_timesteps)
+
+    if save_path is not None:
+        model.save(str(save_path))
+
+    return model
+
+
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Check and train the point-goal MuJoCo RL environment.")
+    parser.add_argument("command", choices=("check", "train", "check-train"), nargs="?", default="check-train")
+    parser.add_argument("--xml", type=Path, default=DEFAULT_XML_PATH)
+    parser.add_argument("--robot-num", type=int, default=5)
+    parser.add_argument("--timesteps", type=int, default=10_000)
+    parser.add_argument("--save-path", type=Path, default=PROJECT_ROOT / "ppo_point")
+    args = parser.parse_args()
+
+    if args.command in ("check", "check-train"):
+        run_env_check(xml_path=args.xml, robot_num=args.robot_num)
+        print("check_env passed")
+
+    if args.command in ("train", "check-train"):
+        train(
+            total_timesteps=args.timesteps,
+            xml_path=args.xml,
+            robot_num=args.robot_num,
+            save_path=args.save_path,
+        )
+
+
+if __name__ == "__main__":
+    main()
