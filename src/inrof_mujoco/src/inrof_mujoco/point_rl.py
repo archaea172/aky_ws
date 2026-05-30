@@ -34,12 +34,17 @@ class PointEnv(gym.Env):
             for i in range(robot_num)
         ])
 
+        self.robot_x_qpos_ids = np.empty(robot_num, dtype=np.intp)
+        self.robot_y_qpos_ids = np.empty(robot_num, dtype=np.intp)
         self.robot_x_qvel_ids = np.empty(robot_num, dtype=np.intp)
         self.robot_y_qvel_ids = np.empty(robot_num, dtype=np.intp)
         
         for i in range(robot_num):
             x_joint_id = self.model.joint(f"robot_{i}_x").id
             y_joint_id = self.model.joint(f"robot_{i}_y").id
+            
+            self.robot_x_qpos_ids[i] = self.model.jnt_qposadr[x_joint_id]
+            self.robot_y_qpos_ids[i] = self.model.jnt_qposadr[y_joint_id]
             self.robot_x_qvel_ids[i] = self.model.jnt_dofadr[x_joint_id]
             self.robot_y_qvel_ids[i] = self.model.jnt_dofadr[y_joint_id]
             
@@ -103,6 +108,34 @@ class PointEnv(gym.Env):
         boid_params.k_wall = 0.0
 
         self.follower_core = inrof_swerm.FollowerCore(boid_params, 0.5)
+        
+        min_distance_sq = 0.12 ** 2
+        ROBOT_XY = []
+        while len(ROBOT_XY) < self.robot_num:
+            candidate = self.np_random.uniform(
+                low=np.array([-1.0, -1.0]),
+                high=np.array([1.0, 1.0]),
+            ).astype(np.float64)
+            if all(
+                (candidate[0] - x) ** 2 + (candidate[1] - y) ** 2 >= min_distance_sq
+                for x, y in ROBOT_XY
+            ):
+                ROBOT_XY.append(candidate)
+
+        robot_xy = np.asarray(ROBOT_XY, dtype=np.float64)
+        base_xy = np.array([
+            self.model.body(f"robot_{i}").pos[:2]
+            for i in range(self.robot_num)
+        ])
+        qpos_xy = robot_xy - base_xy
+        self.data.qpos[self.robot_x_qpos_ids] = qpos_xy[:, 0]
+        self.data.qpos[self.robot_y_qpos_ids] = qpos_xy[:, 1]
+
+        self.data.qvel[self.robot_x_qvel_ids] = 0.0
+        self.data.qvel[self.robot_y_qvel_ids] = 0.0
+        self.data.ctrl[:] = 0.0
+
+        mujoco.mj_forward(self.model, self.data)
 
         self.step_count = 0
         self._update_robot_state()
