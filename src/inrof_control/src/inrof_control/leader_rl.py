@@ -1,8 +1,11 @@
 import rclpy
+from pathlib import Path
+from ament_index_python.packages import get_package_share_directory
 from rclpy.node import Node
 from rclpy.action import ActionServer
 from nav_msgs.msg import Odometry
 from swerm_msgs.action import LeaderPos
+from stable_baselines3 import PPO
 
 class LeaderRL(Node):
     def __init__(self):
@@ -23,6 +26,8 @@ class LeaderRL(Node):
             )
             for i in range(self.robot_num)
         ]
+        model_path = Path(get_package_share_directory("inrof_control")) / "models" / "ppo_point.zip"
+        self.model = PPO.load(model_path)
 
     def odom_callback(self, robot_id, msg):
         self.robot_odometry[robot_id] = msg
