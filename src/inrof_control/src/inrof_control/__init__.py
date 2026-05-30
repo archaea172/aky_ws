@@ -1,2 +1,1 @@
-def hello() -> str:
-    return "Hello from inrof-control!"
+from .leader_rl import main_leader
