@@ -46,6 +46,7 @@ class PointEnv(gym.Env):
         self._robot_pos_matrix = np.empty((2, robot_num), dtype=np.float64)
         self._robot_vel_matrix = np.empty((2, robot_num), dtype=np.float64)
         self._leader_pos = np.empty(2, dtype=np.float64)
+        self._prev_robot_vel_matrix = np.zeros((2, self.robot_num), dtype=np.float64)
 
         self.observation_space = spaces.Box(
             low=-np.inf,
@@ -105,6 +106,7 @@ class PointEnv(gym.Env):
 
         self.step_count = 0
         self._update_robot_state()
+        self._prev_robot_vel_matrix[:] = self._robot_vel_matrix
 
         obs = self._get_obs()
         info = {
@@ -136,14 +138,13 @@ class PointEnv(gym.Env):
         self._update_robot_state()
 
         obs = self._get_obs()
-        reward, mean_dist = self._get_reward()
+        reward, info_1 = self._get_reward()
+        self._prev_robot_vel_matrix[:] = self._robot_vel_matrix
 
+        mean_dist = info_1["target_error"]
         terminated = mean_dist < self.success_threshold
         truncated = self.step_count >= self.max_steps
-        info = {
-            "mean_dist": mean_dist,
-            "target_position": self.target_position.copy(),
-        }
+        info = info_1 | {"mean_dist": mean_dist}
 
         return obs, reward, terminated, truncated, info
     
@@ -159,18 +160,34 @@ class PointEnv(gym.Env):
     
     def _get_reward(self):
         diff = self._robot_pos_matrix - self.target_position[:, None]
-        dist_sq = np.sum(diff * diff, axis=0)
+        robot_dists = np.sqrt(np.sum(diff * diff, axis=0))
+        target_error = float(np.mean(robot_dists))
 
-        reward = float(np.mean(1.0 / (1.0 + dist_sq)))
+        vel_delta = self._robot_vel_matrix - self._prev_robot_vel_matrix
+        accel_penalty = np.mean(np.sum(vel_delta * vel_delta, axis=0))
 
-        mean_dist = float(np.mean(np.sqrt(dist_sq)))
+        speed = np.sqrt(np.sum(self._robot_vel_matrix * self._robot_vel_matrix, axis=0))
+        mean_speed = float(np.mean(speed))
 
-        if mean_dist < self.success_threshold:
-            reward += 10.0
+        center = self._robot_pos_matrix.mean(axis=1)
+        offsets = self._robot_pos_matrix - center[:, None]
+        spread = float(np.mean(np.sqrt(np.sum(offsets * offsets, axis=0))))
 
-        reward -= 0.01
+        reward = 0.0
 
-        return reward, mean_dist
+        reward -= 1.0 * target_error
+        reward -= 0.2 * accel_penalty
+        reward -= 0.1 * mean_speed
+        reward -= 0.5 * spread
+
+        info = {
+            "target_error": target_error,
+            "accel_penalty": accel_penalty,
+            "mean_speed": mean_speed,
+            "spread": spread,
+        }
+
+        return reward, info
     
     def _update_robot_state(self):
         for i in range(self.robot_num):
