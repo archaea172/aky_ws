@@ -63,9 +63,10 @@ class SwermEnv(gym.Env):
         self.boid_params.max_vel = 0.2
         self.boid_params.Ir = 100.0
         self.boid_params.Ir_min = 0.01
-        self.boid_params.k_separation = 10.0
+        self.boid_params.k_separation = 1.0
         self.boid_params.k_alignment = 1.1
-        self.boid_params.k_gravity = 0.5
+        self.boid_params.k_gravity = 1.0
+        self.boid_params.k_wall = 0.0
         self.k_follow = 0.5
         self.follower_core = inrof_swerm.FollowerCore(self.boid_params, self.k_follow)
 
@@ -119,14 +120,12 @@ class SwermEnv(gym.Env):
     def _get_obs(self):
         values = []
         for i in range(self.robot_num):
-            body = self.data.body(f"robot_{i}")
-            values.extend(body.xpos[:2])
-            values.extend(body.cvel[:2])
+            values.extend(self._robot_pos_matrix[:, i])
+            values.extend(self._robot_vel_matrix[:, i])
 
         for i in range(self.ball_num):
-            body = self.data.body(f"ball_{i}")
-            values.extend(body.xpos[:2])
-            values.extend(body.cvel[:2])
+            values.extend(self._balls_pos[:, i])
+            values.extend(self._balls_vel_matrix[:, i])
 
         values.extend(self.target_position)
 
@@ -172,8 +171,10 @@ class SwermEnv(gym.Env):
         return reward, ball_distance_sum, robot_ball_distance_sum, int(np.count_nonzero(reached_target)), success
 
     def _update_robot_state(self):
-        self._robot_pos_matrix[0, :] = self.data.qpos[self.robot_x_qpos_ids]
-        self._robot_pos_matrix[1, :] = self.data.qpos[self.robot_y_qpos_ids]
+        for i in range(self.robot_num):
+            body = self.data.body(f"robot_{i}")
+            self._robot_pos_matrix[0, i] = body.xpos[0]
+            self._robot_pos_matrix[1, i] = body.xpos[1]
         self._robot_vel_matrix[0, :] = self.data.qvel[self.robot_x_qvel_ids]
         self._robot_vel_matrix[1, :] = self.data.qvel[self.robot_y_qvel_ids]
 
@@ -198,8 +199,14 @@ class SwermEnv(gym.Env):
         diff = self._balls_pos - self.target_position[:, None]
         return np.sqrt(np.sum(diff * diff, axis=0))
 
-from stable_baselines3 import PPO
-env = SwermEnv(xml_path="models/boid.xml", robot_num=5, ball_num=3)
-model = PPO("MlpPolicy", env, verbose=1, device="cpu")
-model.learn(total_timesteps=50_000_000)
-model.save("ppo_swerm")
+def train():
+    from stable_baselines3 import PPO
+
+    env = SwermEnv(xml_path="models/boid.xml", robot_num=5, ball_num=3)
+    model = PPO("MlpPolicy", env, verbose=1, device="cpu")
+    model.learn(total_timesteps=50_000_000)
+    model.save("ppo_swerm")
+
+
+if __name__ == "__main__":
+    train()

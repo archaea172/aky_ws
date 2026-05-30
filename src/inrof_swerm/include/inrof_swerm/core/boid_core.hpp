@@ -7,20 +7,22 @@
 
 struct GridMap
 {
-    double resolution;
-    double origin_x;
-    double origin_y;
-    int width;
-    int height;
+    double resolution = 0.0;
+    double origin_x = 0.0;
+    double origin_y = 0.0;
+    double origin_yaw = 0.0;
+    int width = 0;
+    int height = 0;
     std::vector<int8_t> data;
 };
 
 struct DistanceFieldMap {
-    double resolution;
-    double origin_x;
-    double origin_y;
-    int width;
-    int height;
+    double resolution = 0.0;
+    double origin_x = 0.0;
+    double origin_y = 0.0;
+    double origin_yaw = 0.0;
+    int width = 0;
+    int height = 0;
     Eigen::ArrayXXf distance;
 };
 
