@@ -275,7 +275,7 @@ def train(total_timesteps=10_000, xml_path=DEFAULT_XML_PATH, robot_num=5, save_p
     from stable_baselines3 import PPO
 
     env = MJXPointEnv(xml_path=xml_path, robot_num=robot_num)
-    model = PPO("MlpPolicy", env, verbose=1, device="cpu", n_steps=128, batch_size=256)
+    model = PPO("MlpPolicy", env, verbose=1, device="cpu", n_steps=512, batch_size=128)
     model.learn(total_timesteps=total_timesteps)
 
     if save_path is not None:
