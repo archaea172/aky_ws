@@ -3,11 +3,14 @@ import numpy as np
 import mujoco
 from mujoco import mjx
 from gymnasium import spaces
-import inrof_swerm
 from pathlib import Path
 import jax
 import jax.numpy as jnp
 from functools import partial
+
+from inrof_mujoco.follower_core_mjx import FollowerCoreMjx
+from inrof_mujoco.follower_core_mjx import FollowerParams
+from inrof_mujoco.follower_core_mjx import update_vels_jit
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_XML_PATH = PROJECT_ROOT / "models" / "point.xml"
@@ -18,14 +21,103 @@ def mjx_forward(model, data):
 
 
 @partial(jax.jit, static_argnames=("frame_skip",))
-def mjx_step_frames(model, data, ctrl, frame_skip):
+def mjx_policy_step(
+    mjx_model,
+    data,
+    action,
+    target_position,
+    prev_robot_vel,
+    params,
+    robot_body_ids,
+    robot_x_qvel_ids,
+    robot_y_qvel_ids,
+    vx_ids,
+    vy_ids,
+    leader_offset_scale,
+    frame_skip
+):
+    robot_pos = data.xpos[robot_body_ids, :2].T
+    robot_vel = jnp.stack([
+        data.qvel[robot_x_qvel_ids],
+        data.qvel[robot_y_qvel_ids],
+    ])
+
+    swarm_center = jnp.mean(robot_pos, axis=1)
+    leader_pos = swarm_center + leader_offset_scale * action
+
+    cmd_vels = update_vels_jit(
+        robot_pos,
+        robot_vel,
+        leader_pos,
+        params,
+    )
+
+    ctrl = data.ctrl
+    ctrl = ctrl.at[vx_ids].set(cmd_vels[0, :].astype(ctrl.dtype))
+    ctrl = ctrl.at[vy_ids].set(cmd_vels[1, :].astype(ctrl.dtype))
     data = data.replace(ctrl=ctrl)
 
     def step_once(carry, _):
-        return mjx.step(model, carry), None
+        return mjx.step(mjx_model, carry), None
 
     data, _ = jax.lax.scan(step_once, data, xs=None, length=frame_skip)
-    return data
+
+    next_robot_pos = data.xpos[robot_body_ids, :2].T
+    next_robot_vel = jnp.stack([
+        data.qvel[robot_x_qvel_ids],
+        data.qvel[robot_y_qvel_ids],
+    ])
+
+    obs = _get_obs_jax(target_position, next_robot_pos, next_robot_vel)
+    reward, reward_info = _get_reward_jax(
+        target_position,
+        next_robot_pos,
+        next_robot_vel,
+        prev_robot_vel,
+    )
+
+    return data, obs, reward, reward_info, next_robot_vel
+
+def _get_obs_jax(target_position, robot_pos, robot_vel):
+    # target_position: (2,)
+    # robot_pos, robot_vel: (2, robot_num)
+    robot_state = jnp.concatenate([
+        robot_pos.T,
+        robot_vel.T,
+    ], axis=1).reshape(-1)
+
+    return jnp.concatenate([target_position, robot_state]).astype(jnp.float32)
+
+def _get_reward_jax(target_position, robot_pos, robot_vel, prev_robot_vel):
+    diff = robot_pos - target_position[:, None]
+    robot_dists = jnp.sqrt(jnp.sum(diff * diff, axis=0))
+    target_error = jnp.mean(robot_dists)
+
+    vel_delta = robot_vel - prev_robot_vel
+    accel_penalty = jnp.mean(jnp.sum(vel_delta * vel_delta, axis=0))
+
+    speed = jnp.sqrt(jnp.sum(robot_vel * robot_vel, axis=0))
+    mean_speed = jnp.mean(speed)
+
+    center = jnp.mean(robot_pos, axis=1)
+    offsets = robot_pos - center[:, None]
+    spread = jnp.mean(jnp.sqrt(jnp.sum(offsets * offsets, axis=0)))
+
+    reward = (
+        -1.0 * target_error
+        -0.2 * accel_penalty
+        -0.1 * mean_speed
+        -0.5 * spread
+    )
+
+    reward_info = {
+        "target_error": target_error,
+        "accel_penalty": accel_penalty,
+        "mean_speed": mean_speed,
+        "spread": spread,
+    }
+
+    return reward, reward_info
 
 class MJXPointEnv(gym.Env):
     def __init__(self, xml_path=DEFAULT_XML_PATH, robot_num=5):
@@ -72,6 +164,9 @@ class MJXPointEnv(gym.Env):
             self.robot_y_qpos_ids[i] = self.model.jnt_qposadr[y_joint_id]
             self.robot_x_qvel_ids[i] = self.model.jnt_dofadr[x_joint_id]
             self.robot_y_qvel_ids[i] = self.model.jnt_dofadr[y_joint_id]
+
+        self.robot_x_qvel_ids_jax = jnp.asarray(self.robot_x_qvel_ids, dtype=jnp.int32)
+        self.robot_y_qvel_ids_jax = jnp.asarray(self.robot_y_qvel_ids, dtype=jnp.int32)
             
         self._robot_pos_matrix = np.empty((2, robot_num), dtype=np.float64)
         self._robot_vel_matrix = np.empty((2, robot_num), dtype=np.float64)
@@ -91,18 +186,20 @@ class MJXPointEnv(gym.Env):
             shape=(2,),
             dtype=np.float32
         )
-        
-        boid_params = inrof_swerm.BoidPrams()
-        boid_params.boid_num = robot_num
-        boid_params.max_vel = 0.2
-        boid_params.Ir = 100.0
-        boid_params.Ir_min = 0.01
-        boid_params.k_separation = 1.0
-        boid_params.k_alignment = 1.1
-        boid_params.k_gravity = 1.0
-        boid_params.k_wall = 0.0
 
-        self.follower_core = inrof_swerm.FollowerCore(boid_params, 0.5)
+        self.follower_params = FollowerParams(
+            0.2,
+            1.0,
+            1.1,
+            1.0,
+            0.0,
+            0.5,
+            0,
+            100,
+            0.01,
+        )
+
+        self.follower_core = FollowerCoreMjx(self.follower_params)
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -116,20 +213,22 @@ class MJXPointEnv(gym.Env):
         target_body_id = self.model.body("target_body").id
         self.model.body_pos[target_body_id, 0:2] = self.target_position
         
-        boid_params = inrof_swerm.BoidPrams()
-        boid_params.boid_num = self.robot_num
-        boid_params.max_vel = 0.2
-        boid_params.Ir = 100.0
-        boid_params.Ir_min = 0.01
-        boid_params.k_separation = self.np_random.uniform(
-            low=0.1,
-            high=3.0,
+        self.follower_params = FollowerParams(
+            0.2,
+            self.np_random.uniform(
+                low=0.1,
+                high=3.0,
+            ),
+            1.1,
+            1.0,
+            0.0,
+            0.5,
+            0,
+            100,
+            0.01,
         )
-        boid_params.k_alignment = 1.1
-        boid_params.k_gravity = 1.0
-        boid_params.k_wall = 0.0
 
-        self.follower_core = inrof_swerm.FollowerCore(boid_params, 0.5)
+        self.follower_core = FollowerCoreMjx(self.follower_params)
         
         min_distance_sq = 0.12 ** 2
         ROBOT_XY = []
@@ -182,36 +281,45 @@ class MJXPointEnv(gym.Env):
     
     def step(self, action):
         action = np.clip(action, self.action_space.low, self.action_space.high)
-        self._update_robot_state()
+        action_jax = jnp.asarray(action, dtype=self.data.ctrl.dtype)
+        self.data, obs, reward, reward_info, next_robot_vel = mjx_policy_step(
+            self.mjx_model,
+            self.data,
+            action_jax,
+            jnp.asarray(self.target_position, dtype=self.data.qpos.dtype),
+            jnp.asarray(self._prev_robot_vel_matrix, dtype=self.data.qpos.dtype),
+            self.follower_params,
+            self.robot_body_ids_jax,
+            self.robot_x_qvel_ids_jax,
+            self.robot_y_qvel_ids_jax,
+            self.vx_ids_jax,
+            self.vy_ids_jax,
+            self.leader_offset_scale,
+            self.frame_skip,
+        )
 
         self.step_count += 1
-        swerm_center = self._robot_pos_matrix.mean(axis=1)
-        self._leader_pos[:] = swerm_center + self.leader_offset_scale * action
 
-        cmd_vels = self.follower_core.update_vels(
-            self._robot_pos_matrix,
-            self._robot_vel_matrix,
-            self._leader_pos
+        obs_np = np.asarray(jax.device_get(obs), dtype=np.float32)
+        reward_float = float(jax.device_get(reward))
+
+        info_values = jax.device_get(reward_info)
+        info = {
+            # "target_error": float(info_values["target_error"]),
+            # "accel_penalty": float(info_values["accel_penalty"]),
+            # "mean_speed": float(info_values["mean_speed"]),
+            # "spread": float(info_values["spread"]),
+            "mean_dist": float(info_values["target_error"]),
+        }
+
+        self._prev_robot_vel_matrix[:, :] = np.asarray(
+            jax.device_get(next_robot_vel),
+            dtype=np.float64,
         )
-        
-        ctrl = self.data.ctrl
-        ctrl = ctrl.at[self.vx_ids_jax].set(jnp.asarray(cmd_vels[0, :], dtype=ctrl.dtype))
-        ctrl = ctrl.at[self.vy_ids_jax].set(jnp.asarray(cmd_vels[1, :], dtype=ctrl.dtype))
-
-        self.data = mjx_step_frames(self.mjx_model, self.data, ctrl, self.frame_skip)
-
-        self._update_robot_state()
-
-        obs = self._get_obs()
-        reward, info_1 = self._get_reward()
-        self._prev_robot_vel_matrix[:] = self._robot_vel_matrix
-
-        mean_dist = info_1["target_error"]
-        terminated = mean_dist < self.success_threshold
+        terminated = info["target_error"] < self.success_threshold
         truncated = self.step_count >= self.max_steps
-        info = info_1 | {"mean_dist": mean_dist}
 
-        return obs, reward, terminated, truncated, info
+        return obs_np, reward_float, terminated, truncated, info
     
     def _get_obs(self):
         values = []
