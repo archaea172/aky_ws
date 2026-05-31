@@ -273,14 +273,8 @@ def run_env_check(xml_path=DEFAULT_XML_PATH, robot_num=5):
 
 def train(total_timesteps=10_000, xml_path=DEFAULT_XML_PATH, robot_num=5, save_path=None):
     from stable_baselines3 import PPO
-    from stable_baselines3.common.env_util import make_vec_env
-    from stable_baselines3.common.vec_env import SubprocVecEnv
 
-    env = make_vec_env(
-        lambda: MJXPointEnv(xml_path=xml_path, robot_num=robot_num),
-        n_envs=8,
-        vec_env_cls=SubprocVecEnv,
-    )
+    env = MJXPointEnv(xml_path=xml_path, robot_num=robot_num)
     model = PPO("MlpPolicy", env, verbose=1, device="cpu", n_steps=128, batch_size=256)
     model.learn(total_timesteps=total_timesteps)
 
