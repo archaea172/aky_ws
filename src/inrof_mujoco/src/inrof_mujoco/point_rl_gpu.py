@@ -179,3 +179,85 @@ class MJXPointEnv(gym.Env):
         }
 
         return obs, info
+    
+    def step(self, action):
+        action = np.clip(action, self.action_space.low, self.action_space.high)
+        self._update_robot_state()
+
+        self.step_count += 1
+        swerm_center = self._robot_pos_matrix.mean(axis=1)
+        self._leader_pos[:] = swerm_center + self.leader_offset_scale * action
+
+        cmd_vels = self.follower_core.update_vels(
+            self._robot_pos_matrix,
+            self._robot_vel_matrix,
+            self._leader_pos
+        )
+        
+        ctrl = self.data.ctrl
+        ctrl = ctrl.at[self.vx_ids_jax].set(jnp.asarray(cmd_vels[0, :], dtype=ctrl.dtype))
+        ctrl = ctrl.at[self.vy_ids_jax].set(jnp.asarray(cmd_vels[1, :], dtype=ctrl.dtype))
+
+        self.data = mjx_step_frames(self.mjx_model, self.data, ctrl, self.frame_skip)
+
+        self._update_robot_state()
+
+        obs = self._get_obs()
+        reward, info_1 = self._get_reward()
+        self._prev_robot_vel_matrix[:] = self._robot_vel_matrix
+
+        mean_dist = info_1["target_error"]
+        terminated = mean_dist < self.success_threshold
+        truncated = self.step_count >= self.max_steps
+        info = info_1 | {"mean_dist": mean_dist}
+
+        return obs, reward, terminated, truncated, info
+    
+    def _get_obs(self):
+        values = []
+        values.extend(self.target_position)
+
+        for i in range(self.robot_num):
+            values.extend(self._robot_pos_matrix[:, i])
+            values.extend(self._robot_vel_matrix[:, i])
+
+        return np.array(values, dtype=np.float32)
+    
+    def _get_reward(self):
+        diff = self._robot_pos_matrix - self.target_position[:, None]
+        robot_dists = np.sqrt(np.sum(diff * diff, axis=0))
+        target_error = float(np.mean(robot_dists))
+
+        vel_delta = self._robot_vel_matrix - self._prev_robot_vel_matrix
+        accel_penalty = np.mean(np.sum(vel_delta * vel_delta, axis=0))
+
+        speed = np.sqrt(np.sum(self._robot_vel_matrix * self._robot_vel_matrix, axis=0))
+        mean_speed = float(np.mean(speed))
+
+        center = self._robot_pos_matrix.mean(axis=1)
+        offsets = self._robot_pos_matrix - center[:, None]
+        spread = float(np.mean(np.sqrt(np.sum(offsets * offsets, axis=0))))
+
+        reward = 0.0
+
+        reward -= 1.0 * target_error
+        reward -= 0.2 * accel_penalty
+        reward -= 0.1 * mean_speed
+        reward -= 0.5 * spread
+
+        info = {
+            "target_error": target_error,
+            "accel_penalty": accel_penalty,
+            "mean_speed": mean_speed,
+            "spread": spread,
+        }
+
+        return reward, info
+    
+    def _update_robot_state(self):
+        robot_xpos = jax.device_get(self.data.xpos[self.robot_body_ids_jax, :2])
+        self._robot_pos_matrix[:, :] = np.asarray(robot_xpos, dtype=np.float64).T
+
+        qvel = np.asarray(jax.device_get(self.data.qvel), dtype=np.float64)
+        self._robot_vel_matrix[0, :] = qvel[self.robot_x_qvel_ids]
+        self._robot_vel_matrix[1, :] = qvel[self.robot_y_qvel_ids]
