@@ -1,7 +1,7 @@
 import numpy as np
 import trimesh
 from PIL import Image
-from shapely.geometry import Polygon, box
+from shapely.geometry import Point, Polygon
 from shapely.ops import unary_union
 import argparse
 import math
@@ -10,7 +10,7 @@ def main():
     parser = argparse.ArgumentParser(description='Convert STL file to PGM image')
     parser.add_argument('--stl', required=True, help='Path to the input STL file')
     parser.add_argument('--pgm', required=True, help='Path to the output PGM file')
-    parser.add_argument('--resolution', type=float, default=0.05, help='Resolution of the output image')
+    parser.add_argument('--resolution', type=float, default=0.01, help='Resolution of the output image')
     parser.add_argument('--z_min', type=float, default=0.1, help='Minimum Z value to consider for occupancy')
     parser.add_argument('--z_max', type=float, default=1.0, help='Maximum Z value to consider for occupancy')
 
@@ -45,10 +45,9 @@ def main():
 
     for iy in range(height):
         for ix in range(width):
-            x_0 = min_x + ix * resolution
-            y_0 = min_y + iy * resolution
-            cell = box(x_0, y_0, x_0 + resolution, y_0 + resolution)
-            if occupied_area.intersects(cell):
+            x = min_x + (ix + 0.5) * resolution
+            y = min_y + (iy + 0.5) * resolution
+            if occupied_area.covers(Point(x, y)):
                 img[height - 1 - iy, ix] = 0
 
     Image.fromarray(img, mode='L').save(pgm_path)
