@@ -477,6 +477,7 @@ dependencies = [
     { name = "numpy" },
     { name = "pyqt6" },
     { name = "stable-baselines3" },
+    { name = "trimesh" },
 ]
 
 [package.metadata]
@@ -489,6 +490,7 @@ requires-dist = [
     { name = "numpy", specifier = "<2" },
     { name = "pyqt6", specifier = ">=6.11.0" },
     { name = "stable-baselines3", specifier = ">=2.8.0" },
+    { name = "trimesh", specifier = ">=4.12.2" },
 ]
 
 [[package]]

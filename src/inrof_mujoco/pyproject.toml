@@ -16,6 +16,7 @@ dependencies = [
     "numpy<2",
     "pyqt6>=6.11.0",
     "stable-baselines3>=2.8.0",
+    "trimesh>=4.12.2",
 ]
 
 [build-system]
