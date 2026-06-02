@@ -14,7 +14,9 @@ dependencies = [
     "mujoco>=3.8.0",
     "mujoco-mjx[warp]>=3.8.0",
     "numpy<2",
+    "pillow>=12.2.0",
     "pyqt6>=6.11.0",
+    "shapely>=2.1.2",
     "stable-baselines3>=2.8.0",
     "trimesh>=4.12.2",
 ]
