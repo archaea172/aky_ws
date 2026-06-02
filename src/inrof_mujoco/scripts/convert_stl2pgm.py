@@ -5,11 +5,12 @@ from shapely.geometry import Point, Polygon
 from shapely.ops import unary_union
 import argparse
 import math
+from pathlib import Path
 
 def main():
     parser = argparse.ArgumentParser(description='Convert STL file to PGM image')
     parser.add_argument('--stl', required=True, help='Path to the input STL file')
-    parser.add_argument('--pgm', required=True, help='Path to the output PGM file')
+    parser.add_argument('--output', required=True, help='Path to the output PGM file directory')
     parser.add_argument('--resolution', type=float, default=0.01, help='Resolution of the output image')
     parser.add_argument('--z_min', type=float, default=0.1, help='Minimum Z value to consider for occupancy')
     parser.add_argument('--z_max', type=float, default=1.0, help='Maximum Z value to consider for occupancy')
@@ -17,7 +18,7 @@ def main():
     args = parser.parse_args()
 
     stl_path = args.stl
-    pgm_path = args.pgm
+    output_dir = Path(args.output)
     resolution = args.resolution
     z_min = args.z_min
     z_max = args.z_max
@@ -50,9 +51,25 @@ def main():
             if occupied_area.covers(Point(x, y)):
                 img[height - 1 - iy, ix] = 0
 
+    pgm_path = output_dir / f"{Path(stl_path).stem}.pgm"
     Image.fromarray(img, mode='L').save(pgm_path)
 
     print(f"PGM image saved to {pgm_path}")
+
+    yaml_path = output_dir / f"{Path(stl_path).stem}.yaml"
+
+    yaml_text = (
+        f"image: {Path(pgm_path).name}\n"
+        "mode: trinary\n"
+        f"resolution: {resolution}\n"
+        f"origin: [{min_x}, {min_y}, 0.0]\n"
+        "negate: 0\n"
+        "occupied_thresh: 0.65\n"
+        "free_thresh: 0.25\n"
+    )
+
+    yaml_path.write_text(yaml_text)
+    print(f"YAML file saved to {yaml_path}")
 
 if __name__ == "__main__":
     main()
