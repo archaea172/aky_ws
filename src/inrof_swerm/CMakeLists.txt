@@ -12,6 +12,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 find_package(OpenMP)
+find_package(OpenCV REQUIRED)
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
 find_package(pybind11 CONFIG REQUIRED)
 find_package(ament_cmake_python REQUIRED)
@@ -104,6 +105,7 @@ add_executable(make_distance
 
 target_link_libraries(make_distance
   inrof_swerm_ros
+  ${OpenCV_LIBS}
 )
 
 install(
