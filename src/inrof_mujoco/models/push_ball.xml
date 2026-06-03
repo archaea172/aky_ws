@@ -1,0 +1,15 @@
+
+<mujoco model="push ball">
+  <compiler angle="radian"/>
+  <option timestep="0.01" gravity="0 0 0"/>
+
+  <worldbody>
+    <light name="sun" pos="0 0 5"/>
+    <geom name="floor" type="plane" size="5 5 0.1" rgba="0.8 0.8 0.8 1"/>
+    
+  </worldbody>
+
+  <actuator>
+    
+  </actuator>
+</mujoco>
