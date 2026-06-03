@@ -98,6 +98,19 @@ install(
   DESTINATION lib/${PROJECT_NAME}
 )
 
+add_executable(make_distance
+  src/make_distancefield_file.cpp
+)
+
+target_link_libraries(make_distance
+  inrof_swerm_ros
+)
+
+install(
+  TARGETS make_distance
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 install(
   DIRECTORY config map
   DESTINATION share/${PROJECT_NAME}
