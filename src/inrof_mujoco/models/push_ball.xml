@@ -6,10 +6,32 @@
   <worldbody>
     <light name="sun" pos="0 0 5"/>
     <geom name="floor" type="plane" size="5 5 0.1" rgba="0.8 0.8 0.8 1"/>
+
+    <body name="robot" pos="0.05 0.05 0.05">
+      <joint name="robot_x" type="slide" axis="1 0 0"/>
+      <joint name="robot_y" type="slide" axis="0 1 0"/>
+      <joint name="robot_yaw" type="hinge" axis="0 0 1"/>
+
+      <geom
+        name="robot_cylinder"
+        type="cylinder"
+        size="0.05 0.05"
+        mass="1.0"
+        rgba="1 0 0 1"
+      />
+    </body>
+
+    <body name="ball" pos="0.15 0 0.035">
+      <joint name="ball_x" type="slide" axis="1 0 0"/>
+      <joint name="ball_y" type="slide" axis="0 1 0"/>
+      <geom name="ball_geom" type="sphere" size="0.035" mass="0.05"/>
+    </body>
     
   </worldbody>
 
   <actuator>
-    
+    <velocity name="robot_vx" joint="robot_x" ctrlrange="-0.3 0.3"/>
+    <velocity name="robot_vy" joint="robot_y" ctrlrange="-0.3 0.3"/>
+    <velocity name="robot_omega" joint="robot_yaw" ctrlrange="-3.0 3.0"/>
   </actuator>
 </mujoco>
