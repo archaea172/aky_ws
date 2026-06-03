@@ -299,7 +299,7 @@ def train(total_timesteps=10_000, xml_path=DEFAULT_XML_PATH, robot_num=5, save_p
 
     env = make_vec_env(
         lambda: PointEnv(xml_path=xml_path, robot_num=robot_num),
-        n_envs=8,
+        n_envs=16,
         vec_env_cls=SubprocVecEnv,
     )
     model = PPO("MlpPolicy", env, verbose=1, device="cpu", n_steps=128, batch_size=256)
