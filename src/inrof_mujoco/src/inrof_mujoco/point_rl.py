@@ -113,8 +113,8 @@ class PointEnv(gym.Env):
         ROBOT_XY = []
         while len(ROBOT_XY) < self.robot_num:
             candidate = self.np_random.uniform(
-                low=np.array([-1.0, -1.0]),
-                high=np.array([1.0, 1.0]),
+                low=np.array([0.1, 0.1]),
+                high=np.array([0.8, 0.4]),
             ).astype(np.float64)
             if all(
                 (candidate[0] - x) ** 2 + (candidate[1] - y) ** 2 >= min_distance_sq
