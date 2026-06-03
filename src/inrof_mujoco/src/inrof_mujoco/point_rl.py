@@ -4,14 +4,46 @@ import mujoco
 from gymnasium import spaces
 import inrof_swerm
 from pathlib import Path
-
+import yaml
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_XML_PATH = PROJECT_ROOT / "models" / "point.xml"
+DEFULT_MAP_PATH = PROJECT_ROOT / "models" / "maps" / "wall_distance_field.yaml"
 
+def load_distance_field(yaml_path):
+    yaml_path = Path(yaml_path)
+
+    with yaml_path.open("r") as f:
+        meta = yaml.safe_load(f)
+
+    bin_path = yaml_path.parent / meta["data"]
+
+    width = int(meta["width"])
+    height = int(meta["height"])
+
+    # little-endian float32
+    distance = np.fromfile(bin_path, dtype="<f4")
+
+    expected = width * height
+    if distance.size != expected:
+        raise ValueError(
+            f"invalid distance field size: got {distance.size}, expected {expected}"
+        )
+
+    # shape: [y, x]
+    distance = distance.reshape((height, width))
+
+    return {
+        "distance": distance,
+        "width": width,
+        "height": height,
+        "resolution": float(meta["resolution"]),
+        "origin": meta["origin"],  # [x, y, yaw]
+        "meta": meta,
+    }
 
 class PointEnv(gym.Env):
-    def __init__(self, xml_path=DEFAULT_XML_PATH, robot_num=5):
+    def __init__(self, xml_path=DEFAULT_XML_PATH, map_path=DEFULT_MAP_PATH, robot_num=5):
         super().__init__()
 
         self.model = mujoco.MjModel.from_xml_path(str(xml_path))
@@ -21,7 +53,7 @@ class PointEnv(gym.Env):
         self.step_count = 0
         self.max_steps = 600
         self.frame_skip = 5
-        self.target_position = np.array([3.0, 3.0], dtype=np.float64)
+        self.target_position = np.array([0.5, 1.5], dtype=np.float64)
         self.success_threshold = 0.25
         self.leader_offset_scale = 2.0
 
@@ -66,6 +98,25 @@ class PointEnv(gym.Env):
             shape=(2,),
             dtype=np.float32
         )
+
+        field = load_distance_field(map_path)
+        self.distance_field = inrof_swerm.DistanceFieldMap()
+        
+        width=field["width"]
+        height=field["height"]
+        resolution=field["resolution"]
+        origin_x=field["origin"][0]
+        origin_y=field["origin"][1]
+        origin_yaw=field["origin"][2]
+        data=field["distance"]
+        self.distance_field.width = width
+        self.distance_field.height = height
+        self.distance_field.resolution = resolution
+        self.distance_field.origin_x = origin_x
+        self.distance_field.origin_y = origin_y
+        self.distance_field.origin_yaw = origin_yaw
+        self.distance_field.distance = data.astype("float32")
+
         
         boid_params = inrof_swerm.BoidPrams()
         boid_params.boid_num = robot_num
@@ -75,7 +126,8 @@ class PointEnv(gym.Env):
         boid_params.k_separation = 1.0
         boid_params.k_alignment = 1.1
         boid_params.k_gravity = 1.0
-        boid_params.k_wall = 0.0
+        boid_params.field = self.distance_field
+        boid_params.k_wall = 1.0
 
         self.follower_core = inrof_swerm.FollowerCore(boid_params, 0.5)
     
@@ -85,13 +137,13 @@ class PointEnv(gym.Env):
         mujoco.mj_resetData(self.model, self.data)
         mujoco.mj_forward(self.model, self.data)
 
-        self.target_position = self.np_random.uniform(
-            low=np.array([-3.0, -3.0]),
-            high=np.array([3.5, 3.5]),
-        ).astype(np.float64)
+        # self.target_position = self.np_random.uniform(
+        #     low=np.array([-3.0, -3.0]),
+        #     high=np.array([3.5, 3.5]),
+        # ).astype(np.float64)
 
-        target_body_id = self.model.body("target_body").id
-        self.model.body_pos[target_body_id, 0:2] = self.target_position
+        # target_body_id = self.model.body("target_body").id
+        # self.model.body_pos[target_body_id, 0:2] = self.target_position
         mujoco.mj_forward(self.model, self.data)
         
         boid_params = inrof_swerm.BoidPrams()
@@ -105,7 +157,8 @@ class PointEnv(gym.Env):
         )
         boid_params.k_alignment = 1.1
         boid_params.k_gravity = 1.0
-        boid_params.k_wall = 0.0
+        boid_params.k_wall = 1.0
+        boid_params.field = self.distance_field
 
         self.follower_core = inrof_swerm.FollowerCore(boid_params, 0.5)
         

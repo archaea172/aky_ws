@@ -17,6 +17,7 @@ PYBIND11_MODULE(_core, m)
         .def_readwrite("resolution", &DistanceFieldMap::resolution, "Resolution of the map.")
         .def_readwrite("origin_x", &DistanceFieldMap::origin_x, "X coordinate of the map origin.")
         .def_readwrite("origin_y", &DistanceFieldMap::origin_y, "Y coordinate of the map origin.")
+        .def_readwrite("origin_yaw", &DistanceFieldMap::origin_yaw, "Yaw coordinate of the map origin.")
         .def_readwrite("width", &DistanceFieldMap::width, "Width of the map in cells.")
         .def_readwrite("height", &DistanceFieldMap::height, "Height of the map in cells.")
         .def_readwrite("distance", &DistanceFieldMap::distance, "2D array of distances to the nearest obstacle.");

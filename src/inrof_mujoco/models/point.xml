@@ -18,7 +18,7 @@
     <geom name="wall_high"    type="box" pos="0.75 1.325 0.1"   size="0.75 0.025 0.1"/>
     <!-- wall end -->
 
-    <body name="target_body" pos="3.0 3.0 0.01">
+    <body name="target_body" pos="0.5 1.5 0.01">
       <geom
         name="target_marker"
         type="cylinder"
