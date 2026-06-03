@@ -5,6 +5,8 @@
 #include <opencv2/opencv.hpp>
 #include <algorithm>
 #include <cmath>
+#include <fstream>
+#include <filesystem>
 
 #include "core/boid_core.hpp"
 
@@ -36,6 +38,39 @@ cv::Mat make_distance_field_image(const DistanceFieldMap& field, float max_dist)
     cv::flip(color, color, 0);
 
     return color;
+}
+
+void save_distance_field(
+    const DistanceFieldMap& field,
+    const std::filesystem::path& output_dir,
+    const std::string& base_name
+)
+{
+    std::filesystem::create_directories(output_dir);
+    auto bin_path = output_dir / (base_name + ".bin");
+    std::ofstream bin(bin_path, std::ios::binary);
+    for (int y = 0; y < field.height; ++y) {
+        for (int x = 0; x < field.width; ++x) {
+            const float d = field.distance(y, x);
+            bin.write(reinterpret_cast<const char*>(&d), sizeof(float));
+        }
+    }
+
+    auto yaml_path = output_dir / (base_name + ".yaml");
+    std::ofstream yaml(yaml_path);
+    yaml << "format: inrof_distance_field\n";
+    yaml << "version: 1\n\n";
+    yaml << "data: " << bin_path.filename().string() << "\n";
+    yaml << "dtype: float32\n";
+    yaml << "width: " << field.width << "\n";
+    yaml << "height: " << field.height << "\n";
+    yaml << "resolution: " << field.resolution << "\n";
+    yaml << "origin: ["
+         << field.origin_x << ", "
+         << field.origin_y << ", "
+         << field.origin_yaw << "]\n";
+    yaml << "unit: meter\n";
+    yaml << "signed: false\n";
 }
 
 int main(int argc, char *argv[])
@@ -73,6 +108,8 @@ int main(int argc, char *argv[])
         map.data = rxdata.data;
 
         DistanceFieldMap field = convertmap_grid_to_distance(map);
+
+        save_distance_field(field, "src/inrof_mujoco/models/maps", "wall_distance_field");
 
         cv::Mat image = make_distance_field_image(field, 2.0f);
         cv::imshow("distance field", image);
