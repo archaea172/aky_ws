@@ -144,7 +144,7 @@ class PushBallEnv(gym.Env):
     
     def _get_reward(self):
         distance_to_target = np.linalg.norm(self._ball_pos[:, 0] - self.ball_target_pos)
-        reward = -0.1 * distance_to_target
+        reward = -0.5 * distance_to_target
         if distance_to_target < self.success_threshold:
             reward += 10.0
 
