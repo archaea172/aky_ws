@@ -51,7 +51,7 @@
   </worldbody>
 
   <actuator>
-    <velocity name="robot_vx" joint="robot_x" ctrlrange="-0.3 0.3"/>
-    <velocity name="robot_vy" joint="robot_y" ctrlrange="-0.3 0.3"/>
+    <velocity name="robot_vx" joint="robot_x" ctrlrange="-0.3 0.3" kv="10" ctrllimited="true"/>
+    <velocity name="robot_vy" joint="robot_y" ctrlrange="-0.3 0.3" kv="10" ctrllimited="true"/>
   </actuator>
 </mujoco>
