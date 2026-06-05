@@ -46,10 +46,12 @@ class PushBallEnv(gym.Env):
 
         self._leader_pos = np.zeros(2, dtype=np.float64)
 
+        self.ball_target_pos = np.array([3.0, 3.0], dtype=np.float64)
+
         self.observation_space = spaces.Box(
             low=-np.inf,
             high=np.inf,
-            shape=(1 * 4 + 2,),  # 4 for robot position and velocity, 2 for ball position
+            shape=(1 * 4 + 2 + 2,),  # 4 for robot position and velocity, 2 for ball position, 2 for ball target position
             dtype=np.float64
         )
 
@@ -100,14 +102,55 @@ class PushBallEnv(gym.Env):
 
         return obs, info
     
+    def step(self, action):
+        action = np.clip(action, self.action_space.low, self.action_space.high)
+
+        self._update_robot_state()
+
+        self.step_count += 1
+        swerm_center = self._robot_pos_matrix.max(axis=1)
+        self._leader_pos[:] = swerm_center + self.leader_offset_scale * action
+
+        cmd_vels = self.follower_core.update_vels(
+            self._robot_pos_matrix,
+            self._robot_vel_matrix,
+            self._leader_pos
+        )
+
+        self.data.ctrl[self.vx_id] = cmd_vels[0, :]
+        self.data.ctrl[self.vy_id] = cmd_vels[1, :]
+
+        for _ in range(self.frame_skip):
+            mujoco.mj_step(self.model, self.data)
+
+        self._update_robot_state()
+
+        obs = self._get_obs()
+        reward, info = self._get_reward()
+
+        terminated = info["distance_to_target"] < self.success_threshold
+        truncated = self.step_count >= self.max_steps
+
+        return obs, reward, terminated, truncated, info
+
     def _get_obs(self):
         values = []
-        values.extend(self._ball_pos[:, 0])
-
         values.extend(self._robot_pos_matrix[:, 0])
         values.extend(self._robot_vel_matrix[:, 0])
+        values.extend(self._ball_pos[:, 0])
+        values.extend(self.ball_target_pos)
 
         return np.array(values, dtype=np.float32)
+    
+    def _get_reward(self):
+        distance_to_target = np.linalg.norm(self._ball_pos[:, 0] - self.ball_target_pos)
+        reward = -distance_to_target
+
+        info = {
+            "distance_to_target": distance_to_target
+        }
+
+        return reward, info
     
     def _update_robot_state(self):
         body = self.data.body("robot")
@@ -120,4 +163,3 @@ class PushBallEnv(gym.Env):
         ball_body = self.data.body("ball")
         self._ball_pos[0, 0] = ball_body.xpos[0]
         self._ball_pos[1, 0] = ball_body.xpos[1]
-        
