@@ -170,13 +170,36 @@ def run_env_check(xml_path=DEFAULT_XML_PATH):
     env = PushBallEnv(xml_path)
     check_env(env, warn=True)
 
+def train(total_timesteps=10000, xml_path=DEFAULT_XML_PATH, save_path=None):
+    from stable_baselines3 import PPO
+    from stable_baselines3.common.env_util import make_vec_env
+    from stable_baselines3.common.vec_env import SubprocVecEnv
+
+    env = make_vec_env(
+        lambda: PushBallEnv(xml_path),
+        n_envs=4,
+        vec_env_cls=SubprocVecEnv
+    )
+    model = PPO("MlpPolicy", env, verbose=1, device="cpu", n_steps=128, batch_size=256)
+    model.learn(total_timesteps=total_timesteps)
+    if save_path is not None:
+        model.save(str(save_path))
+
+    return model
+
 def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="Run environment check for PushBallEnv.")
+    parser.add_argument("command", choices=["check", "train"], help="Command to execute: 'check' to run environment check, 'train' to train the model.")
     parser.add_argument("--xml_path", type=str, default=str(DEFAULT_XML_PATH))
+    parser.add_argument("--save_path", type=str, default=PROJECT_ROOT / "push_ball", help="Path to save the trained model.")
+    parser.add_argument("--total_timesteps", type=int, default=10000, help="Total timesteps for training the model.")
     args = parser.parse_args()
-    run_env_check(args.xml_path)
+    if args.command == "check":
+        run_env_check(args.xml_path)
+    elif args.command == "train":
+        train(total_timesteps=args.total_timesteps, xml_path=args.xml_path, save_path=args.save_path)
 
 if __name__ == "__main__":
     main()
