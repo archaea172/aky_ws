@@ -10,7 +10,6 @@
     <body name="robot" pos="0.05 0.05 0.05">
       <joint name="robot_x" type="slide" axis="1 0 0"/>
       <joint name="robot_y" type="slide" axis="0 1 0"/>
-      <joint name="robot_yaw" type="hinge" axis="0 0 1"/>
 
       <geom
         name="robot_cylinder"
@@ -32,6 +31,5 @@
   <actuator>
     <velocity name="robot_vx" joint="robot_x" ctrlrange="-0.3 0.3"/>
     <velocity name="robot_vy" joint="robot_y" ctrlrange="-0.3 0.3"/>
-    <velocity name="robot_omega" joint="robot_yaw" ctrlrange="-3.0 3.0"/>
   </actuator>
 </mujoco>
