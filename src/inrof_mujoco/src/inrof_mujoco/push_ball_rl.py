@@ -144,10 +144,18 @@ class PushBallEnv(gym.Env):
     
     def _get_reward(self):
         distance_to_target = np.linalg.norm(self._ball_pos[:, 0] - self.ball_target_pos)
-        reward = -distance_to_target
+        reward = -0.1 * distance_to_target
+        if distance_to_target < self.success_threshold:
+            reward += 10.0
+
+        distance_robot_to_ball = np.linalg.norm(self._robot_pos_matrix[:, 0] - self._ball_pos[:, 0])
+        reward += -0.1 * distance_robot_to_ball
+
+
 
         info = {
-            "distance_to_target": distance_to_target
+            "distance_to_target": distance_to_target,
+            "distance_robot_to_ball": distance_robot_to_ball
         }
 
         return reward, info
@@ -177,7 +185,7 @@ def train(total_timesteps=10000, xml_path=DEFAULT_XML_PATH, save_path=None):
 
     env = make_vec_env(
         lambda: PushBallEnv(xml_path),
-        n_envs=4,
+        n_envs=16,
         vec_env_cls=SubprocVecEnv
     )
     model = PPO("MlpPolicy", env, verbose=1, device="cpu", n_steps=128, batch_size=256)
