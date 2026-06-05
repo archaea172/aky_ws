@@ -52,14 +52,14 @@ class PushBallEnv(gym.Env):
             low=-np.inf,
             high=np.inf,
             shape=(1 * 4 + 2 + 2,),  # 4 for robot position and velocity, 2 for ball position, 2 for ball target position
-            dtype=np.float64
+            dtype=np.float32
         )
 
         self.action_space = spaces.Box(
             low=-1.0,
             high=1.0,
             shape=(2,),  # 2 for velocity commands in x and y directions
-            dtype=np.float64
+            dtype=np.float32
         )
 
         
@@ -117,8 +117,8 @@ class PushBallEnv(gym.Env):
             self._leader_pos
         )
 
-        self.data.ctrl[self.vx_id] = cmd_vels[0, :]
-        self.data.ctrl[self.vy_id] = cmd_vels[1, :]
+        self.data.ctrl[self.vx_id] = cmd_vels[0, 0]
+        self.data.ctrl[self.vy_id] = cmd_vels[1, 0]
 
         for _ in range(self.frame_skip):
             mujoco.mj_step(self.model, self.data)
@@ -128,8 +128,8 @@ class PushBallEnv(gym.Env):
         obs = self._get_obs()
         reward, info = self._get_reward()
 
-        terminated = info["distance_to_target"] < self.success_threshold
-        truncated = self.step_count >= self.max_steps
+        terminated = bool(info["distance_to_target"] < self.success_threshold)
+        truncated = bool(self.step_count >= self.max_steps)
 
         return obs, reward, terminated, truncated, info
 
@@ -163,3 +163,20 @@ class PushBallEnv(gym.Env):
         ball_body = self.data.body("ball")
         self._ball_pos[0, 0] = ball_body.xpos[0]
         self._ball_pos[1, 0] = ball_body.xpos[1]
+
+def run_env_check(xml_path=DEFAULT_XML_PATH):
+    from stable_baselines3.common.env_checker import check_env
+
+    env = PushBallEnv(xml_path)
+    check_env(env, warn=True)
+
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Run environment check for PushBallEnv.")
+    parser.add_argument("--xml_path", type=str, default=str(DEFAULT_XML_PATH))
+    args = parser.parse_args()
+    run_env_check(args.xml_path)
+
+if __name__ == "__main__":
+    main()
