@@ -13,7 +13,7 @@
       friction="2.0 0.01 0.001"
     />
 
-    <body name="target_body" pos="3.0 3.0 0.01">
+    <body name="target_body" pos="1.5 1.5 0.01">
       <geom
         name="target_marker"
         type="cylinder"
@@ -37,9 +37,9 @@
       />
     </body>
 
-    <body name="ball" pos="1.0 2.0 0.035">
-      <joint name="ball_x" type="slide" axis="1 0 0"/>
-      <joint name="ball_y" type="slide" axis="0 1 0"/>
+    <body name="ball" pos="0.5 1.0 0.035">
+      <joint name="ball_x" type="slide" axis="1 0 0" damping="0.03" frictionloss="0.001"/>
+      <joint name="ball_y" type="slide" axis="0 1 0" damping="0.03" frictionloss="0.001"/>
       <geom
         name="ball_geom"
         type="sphere"

@@ -43,10 +43,11 @@ class PushBallEnv(gym.Env):
         self._robot_vel_matrix = np.empty((2, 1), dtype=np.float64)
 
         self._ball_pos = np.empty((2, 1), dtype=np.float64)
+        self._pre_ball_pos = np.empty((2, 1), dtype=np.float64)
 
         self._leader_pos = np.zeros(2, dtype=np.float64)
 
-        self.ball_target_pos = np.array([3.0, 3.0], dtype=np.float64)
+        self.ball_target_pos = np.array([1.5, 1.5], dtype=np.float64)
 
         self.observation_space = spaces.Box(
             low=-np.inf,
@@ -110,6 +111,7 @@ class PushBallEnv(gym.Env):
         self.step_count += 1
         swerm_center = self._robot_pos_matrix.max(axis=1)
         self._leader_pos[:] = swerm_center + self.leader_offset_scale * action
+        self._pre_ball_pos[:] = self._ball_pos
 
         cmd_vels = self.follower_core.update_vels(
             self._robot_pos_matrix,
@@ -149,7 +151,13 @@ class PushBallEnv(gym.Env):
             reward += 10.0
 
         distance_robot_to_ball = np.linalg.norm(self._robot_pos_matrix[:, 0] - self._ball_pos[:, 0])
-        reward += -0.1 * distance_robot_to_ball
+        if distance_robot_to_ball > 0.5:
+            reward += -0.1 * distance_robot_to_ball
+        # else:
+        #     reward += -0.5 * distance_robot_to_ball
+
+        diff_ball_pos = self._ball_pos - self._pre_ball_pos
+        reward += 0.1 * np.linalg.norm(diff_ball_pos)
 
         info = {
             "distance_to_target": distance_to_target,

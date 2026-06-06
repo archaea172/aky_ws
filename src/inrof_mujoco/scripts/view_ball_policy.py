@@ -55,7 +55,7 @@ def main() -> None:
             obs, reward, terminated, truncated, info = env.step(action)
 
             if args.print_every > 0 and step % args.print_every == 0:
-                print(f"Step: {step}, Reward: {reward:.3f}, Info: {info}")
+                print(f"Step: {step}, Reward: {reward:.3f}, Info: {info}, Action: {action}")
 
 
             if terminated or truncated:
