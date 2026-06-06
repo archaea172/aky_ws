@@ -200,18 +200,49 @@ def run_env_check(xml_path=DEFAULT_XML_PATH):
     env = PushBallEnv(xml_path)
     check_env(env, warn=True)
 
-def train(total_timesteps=10000, xml_path=DEFAULT_XML_PATH, save_path=None):
+def train(
+    total_timesteps=10000,
+    xml_path=DEFAULT_XML_PATH,
+    save_path=None,
+    best_model_save_path=None,
+    eval_freq=10000,
+    n_eval_episodes=10,
+):
     from stable_baselines3 import PPO
+    from stable_baselines3.common.callbacks import EvalCallback
     from stable_baselines3.common.env_util import make_vec_env
     from stable_baselines3.common.vec_env import SubprocVecEnv
 
+    n_envs = 16
     env = make_vec_env(
         lambda: PushBallEnv(xml_path),
-        n_envs=16,
+        n_envs=n_envs,
         vec_env_cls=SubprocVecEnv
     )
+    eval_env = make_vec_env(
+        lambda: PushBallEnv(xml_path),
+        n_envs=1
+    )
+
+    if best_model_save_path is None:
+        if save_path is None:
+            best_model_save_path = PROJECT_ROOT / "push_ball_best"
+        else:
+            save_path = Path(save_path)
+            best_model_save_path = save_path.with_name(f"{save_path.stem}_best")
+
+    eval_callback = EvalCallback(
+        eval_env,
+        best_model_save_path=str(best_model_save_path),
+        log_path=str(best_model_save_path),
+        eval_freq=max(eval_freq // n_envs, 1),
+        n_eval_episodes=n_eval_episodes,
+        deterministic=True,
+        render=False,
+    )
+
     model = PPO("MlpPolicy", env, verbose=1, device="cpu", n_steps=128, batch_size=256)
-    model.learn(total_timesteps=total_timesteps)
+    model.learn(total_timesteps=total_timesteps, callback=eval_callback)
     if save_path is not None:
         model.save(str(save_path))
 
@@ -225,11 +256,21 @@ def main():
     parser.add_argument("--xml_path", type=str, default=str(DEFAULT_XML_PATH))
     parser.add_argument("--save_path", type=str, default=PROJECT_ROOT / "push_ball", help="Path to save the trained model.")
     parser.add_argument("--total_timesteps", type=int, default=10000, help="Total timesteps for training the model.")
+    parser.add_argument("--best_model_save_path", type=str, default=None, help="Directory to save the best evaluated model.")
+    parser.add_argument("--eval_freq", type=int, default=10000, help="Evaluate every this many environment timesteps.")
+    parser.add_argument("--n_eval_episodes", type=int, default=10, help="Number of episodes per evaluation.")
     args = parser.parse_args()
     if args.command == "check":
         run_env_check(args.xml_path)
     elif args.command == "train":
-        train(total_timesteps=args.total_timesteps, xml_path=args.xml_path, save_path=args.save_path)
+        train(
+            total_timesteps=args.total_timesteps,
+            xml_path=args.xml_path,
+            save_path=args.save_path,
+            best_model_save_path=args.best_model_save_path,
+            eval_freq=args.eval_freq,
+            n_eval_episodes=args.n_eval_episodes,
+        )
 
 if __name__ == "__main__":
     main()
