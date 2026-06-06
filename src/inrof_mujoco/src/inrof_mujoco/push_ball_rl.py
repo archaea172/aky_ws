@@ -38,12 +38,15 @@ class PushBallEnv(gym.Env):
 
         self.ball_x_qpos_id = self.model.jnt_qposadr[self.model.joint("ball_x").id]
         self.ball_y_qpos_id = self.model.jnt_qposadr[self.model.joint("ball_y").id]
+        self.ball_x_qvel_id = self.model.jnt_dofadr[self.model.joint("ball_x").id]
+        self.ball_y_qvel_id = self.model.jnt_dofadr[self.model.joint("ball_y").id]
 
         self._robot_pos_matrix = np.empty((2, 1), dtype=np.float64)
         self._robot_vel_matrix = np.empty((2, 1), dtype=np.float64)
 
         self._ball_pos = np.empty((2, 1), dtype=np.float64)
         self._pre_ball_pos = np.empty((2, 1), dtype=np.float64)
+        self._ball_vel_matrix = np.empty((2, 1), dtype=np.float64)
 
         self._leader_pos = np.zeros(2, dtype=np.float64)
 
@@ -52,7 +55,7 @@ class PushBallEnv(gym.Env):
         self.observation_space = spaces.Box(
             low=-np.inf,
             high=np.inf,
-            shape=(1 * 4 + 2 + 2,),  # 4 for robot position and velocity, 2 for ball position, 2 for ball target position
+            shape=(1 * 4 + 2 * 2 + 2,),  # 4 for robot position and velocity, 2 for ball position and veolocity, 2 for ball velocity, 2 for ball target position
             dtype=np.float32
         )
 
@@ -149,6 +152,7 @@ class PushBallEnv(gym.Env):
         values.extend(self._robot_pos_matrix[:, 0])
         values.extend(self._robot_vel_matrix[:, 0])
         values.extend(self._ball_pos[:, 0])
+        values.extend(self._ball_vel_matrix[:, 0])
         values.extend(self.ball_target_pos)
 
         return np.array(values, dtype=np.float32)
@@ -187,6 +191,8 @@ class PushBallEnv(gym.Env):
         ball_body = self.data.body("ball")
         self._ball_pos[0, 0] = ball_body.xpos[0]
         self._ball_pos[1, 0] = ball_body.xpos[1]
+        self._ball_vel_matrix[0, 0] = self.data.qvel[self.ball_x_qvel_id]
+        self._ball_vel_matrix[1, 0] = self.data.qvel[self.ball_y_qvel_id]
 
 def run_env_check(xml_path=DEFAULT_XML_PATH):
     from stable_baselines3.common.env_checker import check_env
