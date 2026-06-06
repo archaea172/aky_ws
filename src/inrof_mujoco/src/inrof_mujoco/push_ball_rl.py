@@ -151,8 +151,8 @@ class PushBallEnv(gym.Env):
             reward += 10.0
 
         distance_robot_to_ball = np.linalg.norm(self._robot_pos_matrix[:, 0] - self._ball_pos[:, 0])
-        if distance_robot_to_ball > 0.5:
-            reward += -0.1 * distance_robot_to_ball
+        # if distance_robot_to_ball > 0.5:
+        reward += -0.01 * distance_robot_to_ball
         # else:
         #     reward += -0.5 * distance_robot_to_ball
 
