@@ -169,8 +169,9 @@ class PushBallEnv(gym.Env):
         # else:
         #     reward += -0.5 * distance_robot_to_ball
 
-        diff_ball_pos = self._ball_pos - self._pre_ball_pos
-        reward += 0.1 * np.linalg.norm(diff_ball_pos)
+        prev_distance = np.linalg.norm(self._pre_ball_pos[:, 0] - self.ball_target_pos)
+        progress = prev_distance - distance_to_target
+        reward += 0.1 * progress
 
         info = {
             "distance_to_target": distance_to_target,
