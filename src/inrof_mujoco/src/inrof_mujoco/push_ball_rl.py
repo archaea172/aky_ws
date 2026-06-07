@@ -10,7 +10,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_XML_PATH = PROJECT_ROOT / "models" / "push_ball.xml"
 
 class PushBallEnv(gym.Env):
-    def __init__(self, xml_path=DEFAULT_XML_PATH):
+    def __init__(self, stage, xml_path=DEFAULT_XML_PATH):
         super().__init__()
 
         self.model = mujoco.MjModel.from_xml_path(str(xml_path))
@@ -19,7 +19,10 @@ class PushBallEnv(gym.Env):
         self.step_count = 0
         self.max_steps = 500
         self.frame_skip = 5
-        self.success_threshold = 0.25
+        if stage == 1:
+            self.success_threshold = 0.25
+        elif stage == 2:
+            self.success_threshold = 0.15
         self.leader_offset_scale = 2.0
 
         self.vx_id = self.model.actuator("robot_vx").id
@@ -243,7 +246,7 @@ class PushBallEnv(gym.Env):
 def run_env_check(xml_path=DEFAULT_XML_PATH):
     from stable_baselines3.common.env_checker import check_env
 
-    env = PushBallEnv(xml_path)
+    env = PushBallEnv(2, xml_path)
     check_env(env, warn=True)
 
 def train(
@@ -261,12 +264,12 @@ def train(
 
     n_envs = 16
     env = make_vec_env(
-        lambda: PushBallEnv(xml_path),
+        lambda: PushBallEnv(1, xml_path),
         n_envs=n_envs,
         vec_env_cls=SubprocVecEnv
     )
     eval_env = make_vec_env(
-        lambda: PushBallEnv(xml_path),
+        lambda: PushBallEnv(1, xml_path),
         n_envs=1
     )
 
@@ -294,17 +297,74 @@ def train(
 
     return model
 
+def additional_train(
+    total_timesteps=10000,
+    xml_path=DEFAULT_XML_PATH,
+    pre_model_path=None,
+    save_path=None,
+    best_model_save_path=None,
+    eval_freq=10000,
+    n_eval_episodes=10,
+    stage=2,
+):
+    from stable_baselines3 import PPO
+    from stable_baselines3.common.callbacks import EvalCallback
+    from stable_baselines3.common.env_util import make_vec_env
+    from stable_baselines3.common.vec_env import SubprocVecEnv
+
+    n_envs = 16
+    env = make_vec_env(
+        lambda: PushBallEnv(stage, xml_path),
+        n_envs=n_envs,
+        vec_env_cls=SubprocVecEnv
+    )
+    eval_env = make_vec_env(
+        lambda: PushBallEnv(stage, xml_path),
+        n_envs=1
+    )
+
+    if best_model_save_path is None:
+        if save_path is None:
+            best_model_save_path = PROJECT_ROOT / "push_ball_best"
+        else:
+            save_path = Path(save_path)
+            best_model_save_path = save_path.with_name(f"{save_path.stem}_best")
+
+    eval_callback = EvalCallback(
+        eval_env,
+        best_model_save_path=str(best_model_save_path),
+        log_path=str(best_model_save_path),
+        eval_freq=max(eval_freq // n_envs, 1),
+        n_eval_episodes=n_eval_episodes,
+        deterministic=True,
+        render=False,
+    )
+
+    model = PPO.load(str(pre_model_path), env=env, device="cpu")
+    model.learn(
+        total_timesteps=total_timesteps,
+        callback=eval_callback,
+        reset_num_timesteps=False,
+    )
+    if save_path is not None:
+        model.save(str(save_path))
+
+    return model
+
+
 def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="Run environment check for PushBallEnv.")
-    parser.add_argument("command", choices=["check", "train"], help="Command to execute: 'check' to run environment check, 'train' to train the model.")
+    parser.add_argument("command", choices=["check", "train", "retrain"], help="Command to execute: 'check' to run environment check, 'train' to train the model, 'retrain' to continue training from a pre-trained model.")
     parser.add_argument("--xml_path", type=str, default=str(DEFAULT_XML_PATH))
     parser.add_argument("--save_path", type=str, default=PROJECT_ROOT / "push_ball", help="Path to save the trained model.")
     parser.add_argument("--total_timesteps", type=int, default=10000, help="Total timesteps for training the model.")
     parser.add_argument("--best_model_save_path", type=str, default=None, help="Directory to save the best evaluated model.")
     parser.add_argument("--eval_freq", type=int, default=10000, help="Evaluate every this many environment timesteps.")
     parser.add_argument("--n_eval_episodes", type=int, default=10, help="Number of episodes per evaluation.")
+    parser.add_argument("--pre_model_path", type=str, default=None, help="Path to a pre-trained model to load before training.")
+    parser.add_argument("--stage", type=int, default=2, help="Stage of the environment to train on (1 or 2).")
     args = parser.parse_args()
     if args.command == "check":
         run_env_check(args.xml_path)
@@ -316,6 +376,21 @@ def main():
             best_model_save_path=args.best_model_save_path,
             eval_freq=args.eval_freq,
             n_eval_episodes=args.n_eval_episodes,
+        )
+    elif args.command == "retrain":
+        if args.pre_model_path is None:
+            print("Error: --pre_model_path must be specified for additional training.")
+            return
+        save_path = args.save_path + f"_stage{args.stage}"
+        additional_train(
+            total_timesteps=args.total_timesteps,
+            xml_path=args.xml_path,
+            pre_model_path=args.pre_model_path,
+            save_path=save_path,
+            best_model_save_path=args.best_model_save_path,
+            eval_freq=args.eval_freq,
+            n_eval_episodes=args.n_eval_episodes,
+            stage=args.stage,
         )
 
 if __name__ == "__main__":
