@@ -1,4 +1,5 @@
 import gymnasium as gym
+import math
 import numpy as np
 import mujoco
 from gymnasium import spaces
@@ -150,14 +151,41 @@ class PushBallEnv(gym.Env):
         return np.array(values, dtype=np.float32)
     
     def _get_reward(self):
-        distance_to_target = np.linalg.norm(self._ball_pos[:, 0] - self.ball_target_pos)
+        ball_x = self._ball_pos[0, 0]
+        ball_y = self._ball_pos[1, 0]
+        target_x = self.ball_target_pos[0]
+        target_y = self.ball_target_pos[1]
+        ball_to_target_x = target_x - ball_x
+        ball_to_target_y = target_y - ball_y
+        distance_to_target = math.hypot(ball_to_target_x, ball_to_target_y)
         
-        distance_robot_to_ball = np.linalg.norm(self._robot_pos_matrix[:, 0] - self._ball_pos[:, 0])
-        prev_distance_robot_to_ball = np.linalg.norm(self._pre_robot_pos_matrix[:, 0] - self._pre_ball_pos[:, 0])
+        robot_to_ball_x = ball_x - self._robot_pos_matrix[0, 0]
+        robot_to_ball_y = ball_y - self._robot_pos_matrix[1, 0]
+        distance_robot_to_ball = math.hypot(robot_to_ball_x, robot_to_ball_y)
+        prev_distance_robot_to_ball = math.hypot(
+            self._pre_ball_pos[0, 0] - self._pre_robot_pos_matrix[0, 0],
+            self._pre_ball_pos[1, 0] - self._pre_robot_pos_matrix[1, 0],
+        )
         progress_robot_to_ball = prev_distance_robot_to_ball - distance_robot_to_ball
 
-        prev_distance = np.linalg.norm(self._pre_ball_pos[:, 0] - self.ball_target_pos)
+        prev_distance = math.hypot(
+            target_x - self._pre_ball_pos[0, 0],
+            target_y - self._pre_ball_pos[1, 0],
+        )
         progress = prev_distance - distance_to_target
+
+        theta_denominator = distance_to_target * distance_robot_to_ball
+        if theta_denominator > 0.0:
+            cos_theta = (
+                ball_to_target_x * robot_to_ball_x + ball_to_target_y * robot_to_ball_y
+            ) / theta_denominator
+            if cos_theta > 1.0:
+                cos_theta = 1.0
+            elif cos_theta < -1.0:
+                cos_theta = -1.0
+            theta = math.acos(cos_theta)
+        else:
+            theta = 0.0
 
         reward = 0.0
         if distance_to_target < self.success_threshold:
@@ -166,6 +194,7 @@ class PushBallEnv(gym.Env):
         if self._is_robot_ball_contact():
             reward = -1.0 * distance_to_target
             reward += 0.1 * progress
+            reward -= theta
         else:
             reward -= 0.2 * distance_robot_to_ball
             reward += 0.05 * progress_robot_to_ball
@@ -175,6 +204,7 @@ class PushBallEnv(gym.Env):
         info = {
             "distance_to_target": distance_to_target,
             "distance_robot_to_ball": distance_robot_to_ball,
+            "theta": theta,
             "reward": reward
         }
 
