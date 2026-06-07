@@ -151,19 +151,26 @@ class PushBallEnv(gym.Env):
     
     def _get_reward(self):
         distance_to_target = np.linalg.norm(self._ball_pos[:, 0] - self.ball_target_pos)
-        reward = -1.0 * distance_to_target
-        if distance_to_target < self.success_threshold:
-            reward += 10.0
-
+        
         distance_robot_to_ball = np.linalg.norm(self._robot_pos_matrix[:, 0] - self._ball_pos[:, 0])
         prev_distance_robot_to_ball = np.linalg.norm(self._pre_robot_pos_matrix[:, 0] - self._pre_ball_pos[:, 0])
         progress_robot_to_ball = prev_distance_robot_to_ball - distance_robot_to_ball
-        if distance_robot_to_ball > 0.12:
-            reward += 0.2 * progress_robot_to_ball
 
         prev_distance = np.linalg.norm(self._pre_ball_pos[:, 0] - self.ball_target_pos)
         progress = prev_distance - distance_to_target
-        reward += 0.1 * progress
+
+        reward = 0.0
+        if distance_to_target < self.success_threshold:
+            reward += 10.0
+
+        if self._is_robot_ball_contact():
+            reward = -1.0 * distance_to_target
+            reward += 0.1 * progress
+        else:
+            reward -= 0.2 * distance_robot_to_ball
+            reward += 0.05 * progress_robot_to_ball
+
+
 
         info = {
             "distance_to_target": distance_to_target,
@@ -186,6 +193,19 @@ class PushBallEnv(gym.Env):
         self._ball_pos[1, 0] = ball_body.xpos[1]
         self._ball_vel_matrix[0, 0] = self.data.qvel[self.ball_x_qvel_id]
         self._ball_vel_matrix[1, 0] = self.data.qvel[self.ball_y_qvel_id]
+
+    def _is_robot_ball_contact(self):
+        robot_geom_id = self.model.geom("robot_cylinder").id
+        ball_geom_id = self.model.geom("ball_geom").id
+
+        for i in range(self.data.ncon):
+            contact = self.data.contact[i]
+            geom_pair = {contact.geom1, contact.geom2}
+
+            if geom_pair == {robot_geom_id, ball_geom_id}:
+                return True
+
+        return False
 
 def run_env_check(xml_path=DEFAULT_XML_PATH):
     from stable_baselines3.common.env_checker import check_env
