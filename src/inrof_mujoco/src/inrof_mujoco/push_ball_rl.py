@@ -191,13 +191,15 @@ class PushBallEnv(gym.Env):
         if distance_to_target < self.success_threshold:
             reward += 10.0
 
-        if self._is_robot_ball_contact():
-            reward = -1.0 * distance_to_target
-            reward += 0.1 * progress
-            reward -= theta
+        is_contact = self._is_robot_ball_contact()
+        if is_contact:
+            # reward -= 1.0 * distance_to_target
+            # reward += 0.1 * progress
+            reward -= 0.5 * theta
         else:
-            reward -= 0.2 * distance_robot_to_ball
-            reward += 0.05 * progress_robot_to_ball
+            # reward -= 0.2 * distance_robot_to_ball
+            # reward += 0.05 * progress_robot_to_ball
+            reward += np.exp(-distance_robot_to_ball) -2.0
 
 
 
@@ -205,7 +207,8 @@ class PushBallEnv(gym.Env):
             "distance_to_target": distance_to_target,
             "distance_robot_to_ball": distance_robot_to_ball,
             "theta": theta,
-            "reward": reward
+            "reward": reward,
+            "is_contact": is_contact,
         }
 
         return reward, info
