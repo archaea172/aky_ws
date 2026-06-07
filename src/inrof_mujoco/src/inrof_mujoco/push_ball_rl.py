@@ -18,7 +18,7 @@ class PushBallEnv(gym.Env):
         self.step_count = 0
         self.max_steps = 500
         self.frame_skip = 5
-        self.success_threshold = 0.15
+        self.success_threshold = 0.25
         self.leader_offset_scale = 2.0
 
         self.vx_id = self.model.actuator("robot_vx").id
@@ -82,15 +82,6 @@ class PushBallEnv(gym.Env):
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
-
-        self.target_position = self.np_random.uniform(
-            low=np.array([1.5, 1.5]),
-            high=np.array([2.0, 2.0]),
-        ).astype(np.float64)
-        self.ball_target_pos[:] = self.target_position
-
-        target_body_id = self.model.body("target_body").id
-        self.model.body_pos[target_body_id, 0:2] = self.target_position
         
         mujoco.mj_resetData(self.model, self.data)
         mujoco.mj_forward(self.model, self.data)
