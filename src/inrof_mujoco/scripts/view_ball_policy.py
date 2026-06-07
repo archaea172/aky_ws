@@ -32,7 +32,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    env = PushBallEnv(2, xml_path=args.xml)
+    env = PushBallEnv(3, xml_path=args.xml)
     model = PPO.load(str(args.model), env=env, device="cpu")
     obs, _ = env.reset(seed=args.seed)
 

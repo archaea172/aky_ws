@@ -19,9 +19,10 @@ class PushBallEnv(gym.Env):
         self.step_count = 0
         self.max_steps = 500
         self.frame_skip = 5
+        self.stage = stage
         if stage == 1:
             self.success_threshold = 0.25
-        elif stage == 2:
+        elif stage >= 2:
             self.success_threshold = 0.15
         self.leader_offset_scale = 2.0
 
@@ -103,6 +104,20 @@ class PushBallEnv(gym.Env):
         self.follower_core = inrof_swerm.FollowerCore(boid_params, 0.5)
 
         self.step_count = 0
+        if self.stage >= 3:
+            robot_pos = self.np_random.uniform(
+                low=np.array([-0.5, -0.5]),
+                high=np.array([0.5, 0.5]),
+            ).astype(np.float64)
+            base_xy = np.array([
+                self.model.body("robot").pos[:2]
+            ])
+            qpos_xy = robot_pos - base_xy
+            self.data.qpos[self.robot_x_qpos_id] = qpos_xy[:, 0]
+            self.data.qpos[self.robot_y_qpos_id] = qpos_xy[:, 1]
+            self.data.qvel[self.robot_x_qvel_id] = 0.0
+            self.data.qvel[self.robot_y_qvel_id] = 0.0
+            mujoco.mj_forward(self.model, self.data)
 
         self._update_robot_state()
 
@@ -192,7 +207,7 @@ class PushBallEnv(gym.Env):
 
         reward = 0.0
         if distance_to_target < self.success_threshold:
-            reward += 10.0
+            reward += 100.0
 
         is_contact = self._is_robot_ball_contact()
         if is_contact:
@@ -242,6 +257,34 @@ class PushBallEnv(gym.Env):
                 return True
 
         return False
+    def _get_robot_ball_contact_force(self):
+        robot_geom_id = self.model.geom("robot_cylinder").id
+        ball_geom_id = self.model.geom("ball_geom").id
+
+        total_force_world = np.zeros(3)
+
+        for i in range(self.data.ncon):
+            contact = self.data.contact[i]
+
+            if {contact.geom1, contact.geom2} != {robot_geom_id, ball_geom_id}:
+                continue
+
+            force_torque_contact = np.zeros(6)
+            mujoco.mj_contactForce(self.model, self.data, i, force_torque_contact)
+
+            force_contact = force_torque_contact[:3]
+
+            # contact.frame の先頭3つが法線方向、次が接線方向
+            frame = contact.frame.reshape(3, 3)
+            force_world = (
+                force_contact[0] * frame[0]
+                + force_contact[1] * frame[1]
+                + force_contact[2] * frame[2]
+            )
+
+            total_force_world += force_world
+
+        return total_force_world
 
 def run_env_check(xml_path=DEFAULT_XML_PATH):
     from stable_baselines3.common.env_checker import check_env
@@ -358,13 +401,13 @@ def main():
     parser = argparse.ArgumentParser(description="Run environment check for PushBallEnv.")
     parser.add_argument("command", choices=["check", "train", "retrain"], help="Command to execute: 'check' to run environment check, 'train' to train the model, 'retrain' to continue training from a pre-trained model.")
     parser.add_argument("--xml_path", type=str, default=str(DEFAULT_XML_PATH))
-    parser.add_argument("--save_path", type=str, default=PROJECT_ROOT / "push_ball", help="Path to save the trained model.")
+    parser.add_argument("--save_path", type=str, default=str(PROJECT_ROOT / "push_ball"), help="Path to save the trained model.")
     parser.add_argument("--total_timesteps", type=int, default=10000, help="Total timesteps for training the model.")
     parser.add_argument("--best_model_save_path", type=str, default=None, help="Directory to save the best evaluated model.")
     parser.add_argument("--eval_freq", type=int, default=10000, help="Evaluate every this many environment timesteps.")
     parser.add_argument("--n_eval_episodes", type=int, default=10, help="Number of episodes per evaluation.")
     parser.add_argument("--pre_model_path", type=str, default=None, help="Path to a pre-trained model to load before training.")
-    parser.add_argument("--stage", type=int, default=2, help="Stage of the environment to train on (1 or 2).")
+    parser.add_argument("--stage", type=int, default=2, help="Stage of the environment to train on.")
     args = parser.parse_args()
     if args.command == "check":
         run_env_check(args.xml_path)
@@ -381,7 +424,8 @@ def main():
         if args.pre_model_path is None:
             print("Error: --pre_model_path must be specified for additional training.")
             return
-        save_path = args.save_path + f"_stage{args.stage}"
+        save_path = Path(args.save_path)
+        save_path = save_path.with_name(f"{save_path.stem}_stage{args.stage}{save_path.suffix}")
         additional_train(
             total_timesteps=args.total_timesteps,
             xml_path=args.xml_path,
