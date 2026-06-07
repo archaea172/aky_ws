@@ -192,18 +192,18 @@ class PushBallEnv(gym.Env):
         )
         progress = prev_distance - distance_to_target
 
-        theta_denominator = distance_to_target * distance_robot_to_ball
-        if theta_denominator > 0.0:
-            cos_theta = (
-                ball_to_target_x * robot_to_ball_x + ball_to_target_y * robot_to_ball_y
-            ) / theta_denominator
-            if cos_theta > 1.0:
-                cos_theta = 1.0
-            elif cos_theta < -1.0:
-                cos_theta = -1.0
-            theta = math.acos(cos_theta)
+        target_dir = np.array([ball_to_target_x, ball_to_target_y], dtype=np.float64)
+        target_norm = np.linalg.norm(target_dir)
+        if target_norm > 1e-6:
+            target_dir /= target_norm
         else:
-            theta = 0.0
+            target_dir[:] = 0.0
+
+        force = self._get_robot_ball_contact_force()
+
+        force_to_target = np.dot(force[:2], target_dir)
+        force_threshold = 0.01
+        force_reward = np.clip(force_to_target / force_threshold, -1.0, 1.0)
 
         reward = 0.0
         if distance_to_target < self.success_threshold:
@@ -211,22 +211,19 @@ class PushBallEnv(gym.Env):
 
         is_contact = self._is_robot_ball_contact()
         if is_contact:
-            # reward -= 1.0 * distance_to_target
-            # reward += 0.1 * progress
-            reward -= 0.5 * theta
+            reward -= 0.3 * force_reward
+            reward += 10.0 * progress
         else:
-            # reward -= 0.2 * distance_robot_to_ball
-            # reward += 0.05 * progress_robot_to_ball
-            reward += np.exp(-distance_robot_to_ball) -2.0
+            reward += np.exp(-distance_robot_to_ball) - 1.0
 
 
 
         info = {
             "distance_to_target": distance_to_target,
             "distance_robot_to_ball": distance_robot_to_ball,
-            "theta": theta,
             "reward": reward,
             "is_contact": is_contact,
+            "force_to_target": force_to_target,
         }
 
         return reward, info

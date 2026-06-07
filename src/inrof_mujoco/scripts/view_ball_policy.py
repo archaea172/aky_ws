@@ -27,12 +27,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--stochastic", action="store_true", help="Sample actions from the policy instead of using deterministic actions.")
     parser.add_argument("--no-realtime", action="store_false", dest="realtime", help="Run as fast as possible.")
+    parser.add_argument("--stage", type=int, default=1, help="Which stage of the environment to run (1, 2, or 3).")
     parser.set_defaults(realtime=True)
     return parser.parse_args()
 
 def main() -> None:
     args = parse_args()
-    env = PushBallEnv(3, xml_path=args.xml)
+    env = PushBallEnv(args.stage, xml_path=args.xml)
     model = PPO.load(str(args.model), env=env, device="cpu")
     obs, _ = env.reset(seed=args.seed)
 
