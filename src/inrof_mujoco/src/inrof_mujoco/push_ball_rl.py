@@ -118,6 +118,14 @@ class PushBallEnv(gym.Env):
             self.data.qvel[self.robot_x_qvel_id] = 0.0
             self.data.qvel[self.robot_y_qvel_id] = 0.0
             mujoco.mj_forward(self.model, self.data)
+        if self.stage >=4:
+            self.ball_target_pos = self.np_random.uniform(
+                low=np.array([1.0, 1.0]),
+                high=np.array([2.0, 2.0]),
+            ).astype(np.float64)
+
+            target_body_id = self.model.body("target_body").id
+            self.model.body_pos[target_body_id, 0:2] = self.ball_target_pos
 
         self._update_robot_state()
 
@@ -211,6 +219,7 @@ class PushBallEnv(gym.Env):
 
         is_contact = self._is_robot_ball_contact()
         if is_contact:
+            reward += 0.1
             reward -= 0.3 * force_reward
             reward += 10.0 * progress
         else:
