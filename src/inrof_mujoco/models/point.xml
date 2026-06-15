@@ -1,0 +1,125 @@
+
+<mujoco model="five_robots">
+  <compiler angle="radian"/>
+  <option timestep="0.01" gravity="0 0 0"/>
+
+  <worldbody>
+    <light name="sun" pos="0 0 5"/>
+    <geom name="floor" type="plane" size="5 5 0.1" rgba="0.8 0.8 0.8 1"/>
+
+    <!-- wall begin -->
+    <geom name="outer_left"   type="box" pos="-0.025 0.875 0.1" size="0.025 0.925 0.1"/>
+    <geom name="outer_right"  type="box" pos="2.025 0.875 0.1"  size="0.025 0.925 0.1"/>
+    <geom name="outer_bottom" type="box" pos="1.0 -0.025 0.1"   size="1.05 0.025 0.1"/>
+    <geom name="outer_top"    type="box" pos="1.0 1.775 0.1"    size="1.05 0.025 0.1"/>
+
+    <geom name="wall_low"     type="box" pos="0.75 0.425 0.1"   size="0.75 0.025 0.1"/>
+    <geom name="wall_mid"     type="box" pos="1.25 0.875 0.1"   size="0.75 0.025 0.1"/>
+    <geom name="wall_high"    type="box" pos="0.75 1.325 0.1"   size="0.75 0.025 0.1"/>
+    <!-- wall end -->
+
+    <body name="target_body" pos="0.5 1.5 0.01">
+      <geom
+        name="target_marker"
+        type="cylinder"
+        size="0.15 0.01"
+        rgba="0.1 0.8 0.2 0.6"
+        contype="0"
+        conaffinity="0"
+      />
+    </body>
+    
+    <body name="robot_0" pos="0.05 0.05 0.05">
+      <joint name="robot_0_x" type="slide" axis="1 0 0"/>
+      <joint name="robot_0_y" type="slide" axis="0 1 0"/>
+
+      <geom
+        name="robot_0_cylinder"
+        type="cylinder"
+        size="0.05 0.05"
+        mass="1.0"
+        rgba="1 0 0 1"
+      />
+    </body>
+    
+
+    <body name="robot_1" pos="0.15 0.05 0.05">
+      <joint name="robot_1_x" type="slide" axis="1 0 0"/>
+      <joint name="robot_1_y" type="slide" axis="0 1 0"/>
+
+      <geom
+        name="robot_1_cylinder"
+        type="cylinder"
+        size="0.05 0.05"
+        mass="1.0"
+        rgba="1 0 0 1"
+      />
+    </body>
+    
+
+    <body name="robot_2" pos="0.25 0.05 0.05">
+      <joint name="robot_2_x" type="slide" axis="1 0 0"/>
+      <joint name="robot_2_y" type="slide" axis="0 1 0"/>
+
+      <geom
+        name="robot_2_cylinder"
+        type="cylinder"
+        size="0.05 0.05"
+        mass="1.0"
+        rgba="1 0 0 1"
+      />
+    </body>
+    
+
+    <body name="robot_3" pos="0.35 0.05 0.05">
+      <joint name="robot_3_x" type="slide" axis="1 0 0"/>
+      <joint name="robot_3_y" type="slide" axis="0 1 0"/>
+
+      <geom
+        name="robot_3_cylinder"
+        type="cylinder"
+        size="0.05 0.05"
+        mass="1.0"
+        rgba="1 0 0 1"
+      />
+    </body>
+    
+
+    <body name="robot_4" pos="0.45 0.05 0.05">
+      <joint name="robot_4_x" type="slide" axis="1 0 0"/>
+      <joint name="robot_4_y" type="slide" axis="0 1 0"/>
+
+      <geom
+        name="robot_4_cylinder"
+        type="cylinder"
+        size="0.05 0.05"
+        mass="1.0"
+        rgba="1 0 0 1"
+      />
+    </body>
+    
+  </worldbody>
+
+  <actuator>
+    
+    <velocity name="robot_0_vx" joint="robot_0_x" kv="10" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    <velocity name="robot_0_vy" joint="robot_0_y" kv="10" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    
+
+    <velocity name="robot_1_vx" joint="robot_1_x" kv="10" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    <velocity name="robot_1_vy" joint="robot_1_y" kv="10" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    
+
+    <velocity name="robot_2_vx" joint="robot_2_x" kv="10" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    <velocity name="robot_2_vy" joint="robot_2_y" kv="10" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    
+
+    <velocity name="robot_3_vx" joint="robot_3_x" kv="10" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    <velocity name="robot_3_vy" joint="robot_3_y" kv="10" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    
+
+    <velocity name="robot_4_vx" joint="robot_4_x" kv="10" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    <velocity name="robot_4_vy" joint="robot_4_y" kv="10" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    
+  </actuator>
+</mujoco>
