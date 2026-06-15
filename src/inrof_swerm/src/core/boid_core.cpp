@@ -199,7 +199,7 @@ Eigen::Vector2d BoidCore::make_gravity_power(const Eigen::Vector2d& x_i, const E
 
 Eigen::Vector2d BoidCore::make_wall_power(const Eigen::Vector2d& x_i)
 {
-    DistanceFieldMap field = this->boid_params_.field;
+    const DistanceFieldMap& field = this->boid_params_.field;
     if (field.resolution <= 0.0 || field.width <= 2 || field.height <= 2 || field.distance.size() == 0)
     {
         return Eigen::Vector2d::Zero();
