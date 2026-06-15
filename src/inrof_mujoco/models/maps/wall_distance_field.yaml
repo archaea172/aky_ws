@@ -1,0 +1,11 @@
+format: inrof_distance_field
+version: 1
+
+data: wall_distance_field.bin
+dtype: float32
+width: 210
+height: 185
+resolution: 0.01
+origin: [-0.05, -0.05, 0]
+unit: meter
+signed: false
