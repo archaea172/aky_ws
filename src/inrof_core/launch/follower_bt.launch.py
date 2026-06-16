@@ -1,14 +1,7 @@
 import os
 
-import launch
 from launch import LaunchDescription
-from launch_ros.actions import Node, LifecycleNode
-from launch_ros.events.lifecycle import ChangeState
-from launch.event_handlers import OnProcessStart
-from launch_ros.event_handlers import OnStateTransition
-from launch.actions import RegisterEventHandler, EmitEvent
-
-import lifecycle_msgs.msg
+from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 
 def generate_launch_description():
@@ -20,11 +13,6 @@ def generate_launch_description():
         'config',
         'follower.yaml'
     )
-    map_yaml = os.path.join(
-        get_package_share_directory('inrof_swerm'),
-        'map',
-        'irc.yaml'
-    )
 
     follower_node = Node(
         package='inrof_swerm',
@@ -33,54 +21,6 @@ def generate_launch_description():
         parameters=[follower_param]
     )
     ld.add_action(follower_node)
-
-    map_server_node = LifecycleNode(
-        package='nav2_map_server',
-        executable='map_server',
-        name='map_server',
-        namespace='',
-        parameters=[{'yaml_filename': map_yaml}]
-    )
-    map_configure_event_handler = RegisterEventHandler(
-        OnProcessStart(
-            target_action=map_server_node,
-            on_start=[
-                EmitEvent(
-                    event=ChangeState(
-                        lifecycle_node_matcher=launch.events.matches_action(map_server_node),
-                        transition_id=lifecycle_msgs.msg.Transition.TRANSITION_CONFIGURE,
-                    )
-                )
-            ]
-        )
-    )
-    map_activate_event_handler = RegisterEventHandler(
-        OnStateTransition(
-            target_lifecycle_node=map_server_node,
-            start_state='configuring',
-            goal_state='inactive',
-            entities=[
-                EmitEvent(
-                    event=ChangeState(
-                        lifecycle_node_matcher=launch.events.matches_action(map_server_node),
-                        transition_id=lifecycle_msgs.msg.Transition.TRANSITION_ACTIVATE,
-                    )
-                )
-            ]
-        )
-    )
-    ld.add_action(map_server_node)
-    ld.add_action(map_configure_event_handler)
-    ld.add_action(map_activate_event_handler)
-
-    static_from_map_to_odom = Node(
-        package="tf2_ros",
-        executable="static_transform_publisher",
-        name="static_transform_publisher",
-        output="screen",
-        arguments=['0', '0', '0', '0', '0', '0', 'map', 'odom']
-    )
-    ld.add_action(static_from_map_to_odom)
 
     leader_pos_server_node = Node(
         package='inrof_control',
