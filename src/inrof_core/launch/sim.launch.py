@@ -81,7 +81,9 @@ def generate_launch_description():
     ROBOT_Z = 0.4
     world_name = 'irc_table'
     gz_twist_type = 'ignition.msgs.Twist'
-    bridge_arguments = []
+    bridge_arguments = [
+        '/clock@rosgraph_msgs/msg/Clock[ignition.msgs.Clock',
+    ]
     bridge_remappings = []
 
     min_distance_sq = 0.1 ** 2
@@ -109,6 +111,7 @@ def generate_launch_description():
             parameters=[
                 robot_description,
                 {'frame_prefix': frame_prefix},
+                {'use_sim_time': True},
             ],
         )
         ld.add_action(robot_node)
@@ -146,6 +149,7 @@ def generate_launch_description():
         name='gz_bridge',
         output='screen',
         arguments=bridge_arguments,
+        parameters=[{'use_sim_time': True}],
         remappings=bridge_remappings,
     )
     ld.add_action(bridge_node)
@@ -160,7 +164,10 @@ def generate_launch_description():
         executable='map_server',
         name='map_server',
         namespace='',
-        parameters=[{'yaml_filename': map_yaml}]
+        parameters=[
+            {'yaml_filename': map_yaml},
+            {'use_sim_time': True},
+        ]
     )
     map_configure_event_handler = RegisterEventHandler(
         OnProcessStart(
@@ -199,6 +206,7 @@ def generate_launch_description():
         executable="static_transform_publisher",
         name="static_transform_publisher",
         output="screen",
+        parameters=[{'use_sim_time': True}],
         arguments=['0', '0', '0', '0', '0', '0', 'map', 'odom']
     )
     ld.add_action(static_from_map_to_odom)
