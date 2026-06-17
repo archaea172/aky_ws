@@ -99,13 +99,25 @@ void LeaderPosServer::execute(const std::shared_ptr<GoalHandleLeaderPos> goal_ha
             return;
     }
 
-    rclcpp::Rate loop_rate(1000.0 / publish_rate_ms);
+    const auto publish_period = rclcpp::Duration::from_seconds(publish_rate_ms / 1000.0);
+    auto clock = this->get_clock();
+    auto next_publish_time = clock->now();
+
     nav_msgs::msg::Odometry txdata;
     size_t i = 0;
 
     while (rclcpp::ok())
     {
+        if (goal_handle->is_canceling())
+        {
+            result->success = false;
+            result->msg = "goal canceled";
+            goal_handle->canceled(result);
+            return;
+        }
+
         txdata.header = response->route.poses[i].header;
+        txdata.header.stamp = clock->now();
         txdata.pose.pose = response->route.poses[i].pose;
         this->leader_odom_publisher_->publish(txdata);
         ++i;
@@ -113,7 +125,17 @@ void LeaderPosServer::execute(const std::shared_ptr<GoalHandleLeaderPos> goal_ha
             RCLCPP_INFO(this->get_logger(), "finish move!");
             break;
         }
-        loop_rate.sleep();
+        
+        next_publish_time = next_publish_time + publish_period;
+        if (!clock->sleep_until(
+                next_publish_time,
+                this->get_node_base_interface()->get_context()))
+        {
+            result->success = false;
+            result->msg = "sleep interrupted";
+            goal_handle->abort(result);
+            return;
+        }
     }
     
     result->success = true;
