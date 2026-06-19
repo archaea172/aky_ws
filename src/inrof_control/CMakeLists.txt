@@ -21,6 +21,13 @@ include_directories(
   include/${PROJECT_NAME}
 )
 
+add_library(mppi_swerm
+  src/mppi_swerm.cpp
+)
+target_link_libraries(mppi_swerm
+  Eigen3::Eigen
+)
+
 add_executable(path_generate_server
   src/path_generate_server.cpp
 )
