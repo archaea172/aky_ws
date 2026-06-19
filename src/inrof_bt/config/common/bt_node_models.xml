@@ -10,6 +10,7 @@
       <input_port name="start_y"/>
       <input_port name="goal_x"/>
       <input_port name="goal_y"/>
+      <input_port name="waypoints"/>
       <input_port name="max_speed"/>
     </Action>
   </TreeNodesModel>

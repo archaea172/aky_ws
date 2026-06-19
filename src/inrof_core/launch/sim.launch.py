@@ -1,15 +1,22 @@
 import os
 import random
+import launch
 
 from launch import LaunchDescription
 from launch.actions import AppendEnvironmentVariable, DeclareLaunchArgument
 from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
-from launch_ros.actions import Node
+from launch_ros.actions import Node, LifecycleNode
+from launch_ros.events.lifecycle import ChangeState
+from launch.event_handlers import OnProcessStart
+from launch_ros.event_handlers import OnStateTransition
+from launch.actions import RegisterEventHandler, EmitEvent
 from launch_ros.substitutions import FindPackageShare
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch_xml.launch_description_sources import XMLLaunchDescriptionSource
 
 from ament_index_python.packages import get_package_share_directory
+import lifecycle_msgs.msg
 
 def generate_launch_description():
     ld = LaunchDescription()
@@ -42,7 +49,7 @@ def generate_launch_description():
         ),
         launch_arguments={'gz_args': '-g -v2 ', 'on_exit_shutdown': 'true'}.items()
     )
-    ld.add_action(gzclient_cmd)
+    # ld.add_action(gzclient_cmd)
 
     spawn_balls_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -74,7 +81,9 @@ def generate_launch_description():
     ROBOT_Z = 0.4
     world_name = 'irc_table'
     gz_twist_type = 'ignition.msgs.Twist'
-    bridge_arguments = []
+    bridge_arguments = [
+        '/clock@rosgraph_msgs/msg/Clock[ignition.msgs.Clock',
+    ]
     bridge_remappings = []
 
     min_distance_sq = 0.1 ** 2
@@ -102,6 +111,7 @@ def generate_launch_description():
             parameters=[
                 robot_description,
                 {'frame_prefix': frame_prefix},
+                {'use_sim_time': True},
             ],
         )
         ld.add_action(robot_node)
@@ -139,8 +149,82 @@ def generate_launch_description():
         name='gz_bridge',
         output='screen',
         arguments=bridge_arguments,
+        parameters=[{'use_sim_time': True}],
         remappings=bridge_remappings,
     )
     ld.add_action(bridge_node)
+
+    map_yaml = os.path.join(
+        get_package_share_directory('inrof_swerm'),
+        'map',
+        'irc.yaml'
+    )
+    map_server_node = LifecycleNode(
+        package='nav2_map_server',
+        executable='map_server',
+        name='map_server',
+        namespace='',
+        parameters=[
+            {'yaml_filename': map_yaml},
+            {'use_sim_time': True},
+        ]
+    )
+    map_configure_event_handler = RegisterEventHandler(
+        OnProcessStart(
+            target_action=map_server_node,
+            on_start=[
+                EmitEvent(
+                    event=ChangeState(
+                        lifecycle_node_matcher=launch.events.matches_action(map_server_node),
+                        transition_id=lifecycle_msgs.msg.Transition.TRANSITION_CONFIGURE,
+                    )
+                )
+            ]
+        )
+    )
+    map_activate_event_handler = RegisterEventHandler(
+        OnStateTransition(
+            target_lifecycle_node=map_server_node,
+            start_state='configuring',
+            goal_state='inactive',
+            entities=[
+                EmitEvent(
+                    event=ChangeState(
+                        lifecycle_node_matcher=launch.events.matches_action(map_server_node),
+                        transition_id=lifecycle_msgs.msg.Transition.TRANSITION_ACTIVATE,
+                    )
+                )
+            ]
+        )
+    )
+    ld.add_action(map_server_node)
+    ld.add_action(map_configure_event_handler)
+    ld.add_action(map_activate_event_handler)
+
+    static_from_map_to_odom = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        name="static_transform_publisher",
+        output="screen",
+        parameters=[{'use_sim_time': True}],
+        arguments=['0', '0', '0', '0', '0', '0', 'map', 'odom']
+    )
+    ld.add_action(static_from_map_to_odom)
+
+    foxglove_bridge_cmd = IncludeLaunchDescription(
+        XMLLaunchDescriptionSource(
+            os.path.join(
+                get_package_share_directory('foxglove_bridge'),
+                'launch',
+                'foxglove_bridge_launch.xml',
+            )
+        ),
+        launch_arguments={
+            'port': '8765',
+            'use_sim_time': 'true',
+        }.items(),
+    )
+
+    ld.add_action(foxglove_bridge_cmd)
 
     return ld
