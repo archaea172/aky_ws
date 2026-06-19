@@ -5,20 +5,20 @@
 
 struct MppiSwermParams
 {
-    int control_dim_; // 制御入力の次元
-    double predict_resolution_;
-    int predict_horizon_;
+    int control_dim; // 制御入力の次元
+    double predict_resolution;
+    int predict_horizon;
     Eigen::MatrixXd cov;
-
+    int robot_num;
 };
 
 class MppiSwermController
 {
 public:
-    MppiSwermController();
+    MppiSwermController(const MppiSwermParams& parameters);
     ~MppiSwermController();
 
-private:
+// private:
     Eigen::VectorXd sampleMultivariateNormal(const Eigen::VectorXd& mean, const Eigen::MatrixXd& L);
     Eigen::MatrixXd samplingControlArray(const Eigen::VectorXd& pre_control_input);
     Eigen::MatrixXd PredictState(

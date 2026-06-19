@@ -27,6 +27,16 @@ add_library(mppi_swerm
 target_link_libraries(mppi_swerm
   Eigen3::Eigen
 )
+add_executable(debug_node
+  src/test_mppi.cpp
+)
+target_link_libraries(debug_node
+  mppi_swerm
+)
+install(
+  TARGETS debug_node
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 add_executable(path_generate_server
   src/path_generate_server.cpp
