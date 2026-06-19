@@ -50,6 +50,8 @@ bool LeaderPosAction::setGoal(Goal & goal)
         return false;
     }
 
+    goal.start_pos.header.frame_id = "odom";
+    goal.goal_pos.header.frame_id = "odom";
     goal.start_pos.pose.position.x = start_x.value();
     goal.start_pos.pose.position.y = start_y.value();
     goal.goal_pos.pose.position.x = goal_x.value();
