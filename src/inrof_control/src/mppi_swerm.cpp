@@ -3,33 +3,32 @@
 MppiSwermController::MppiSwermController(const MppiSwermParams& parameters)
 : parameters_(parameters)
 {
+    Eigen::LLT<Eigen::Matrix2d> llt(this->parameters_.cov);
+    this->L = llt.matrixL();
 }
 
 MppiSwermController::~MppiSwermController()
 {
 }
 
-Eigen::VectorXd MppiSwermController::sampleMultivariateNormal(const Eigen::VectorXd& mean, const Eigen::MatrixXd& L)
+Eigen::Matrix<double, 2, Eigen::Dynamic>
+MppiSwermController::samplingControlArray(const Eigen::Vector2d& pre_control_input)
 {
+    const int horizon = this->parameters_.predict_horizon;
     std::normal_distribution<double> normal(0.0, 1.0);
-    Eigen::VectorXd z = Eigen::VectorXd::NullaryExpr(this->parameters_.control_dim, [&]() {
-        return normal(this->rng_);
-    });
 
-    return mean + L * z;
-}
+    Eigen::Matrix<double, 2, Eigen::Dynamic> z(2, horizon);
 
-Eigen::MatrixXd MppiSwermController::samplingControlArray(const Eigen::VectorXd& pre_control_input)
-{
-    Eigen::MatrixXd control_array(this->parameters_.control_dim, this->parameters_.predict_horizon);
-    Eigen::LLT<Eigen::MatrixXd> llt(this->parameters_.cov);
-    Eigen::MatrixXd L = llt.matrixL();
+    z = Eigen::Matrix<double, 2, Eigen::Dynamic>::NullaryExpr(
+        2, horizon,
+        [&]() {
+            return normal(rng_);
+        }
+    );
 
-    for (int i = 0; i < this->parameters_.predict_horizon; ++i)
-    {
-        Eigen::VectorXd control_sample = this->sampleMultivariateNormal(pre_control_input, L);
-        control_array.col(i) = control_sample;
-    }
+    Eigen::Matrix<double, 2, Eigen::Dynamic> control_array(2, horizon);
+    control_array.noalias() = this->L * z;
+    control_array.colwise() += pre_control_input;
 
     return control_array;
 }

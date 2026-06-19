@@ -4,7 +4,6 @@
 int main(int argc, char *argv[])
 {
     MppiSwermParams params;
-    params.control_dim = 2;
     params.predict_resolution = 0.01;
     params.predict_horizon = 200;
     Eigen::MatrixXd cov(2, 2);
@@ -16,7 +15,7 @@ int main(int argc, char *argv[])
 
     std::chrono::system_clock::time_point  start, end; // 型は auto で可
     start = std::chrono::system_clock::now(); // 計測開始時間
-    Eigen::VectorXd input(2);
+    Eigen::Vector2d input(2);
     input << 2.0, 2.0;
     test_controller.samplingControlArray(input);
     end = std::chrono::system_clock::now();  // 計測終了時間
