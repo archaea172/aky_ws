@@ -8,15 +8,27 @@ MppiController::~MppiController()
 {
 }
 
-Eigen::VectorXd MppiController::sampleMultivariateNormal(const Eigen::VectorXd& mean)
+Eigen::VectorXd MppiController::sampleMultivariateNormal(const Eigen::VectorXd& mean, const Eigen::MatrixXd& L)
 {
     std::normal_distribution<double> normal(0.0, 1.0);
     Eigen::VectorXd z = Eigen::VectorXd::NullaryExpr(this->parameters.control_dim_, [&]() {
         return normal(this->rng);
     });
 
+    return mean + L * z;
+}
+
+Eigen::MatrixXd MppiController::samplingControlArray(const Eigen::VectorXd& pre_control_input)
+{
+    Eigen::MatrixXd control_array(this->parameters.control_dim_, this->parameters.predict_horizon_);
     Eigen::LLT<Eigen::MatrixXd> llt(this->parameters.cov);
     Eigen::MatrixXd L = llt.matrixL();
 
-    return mean + L * z;
+    for (int i = 0; i < this->parameters.predict_horizon_; ++i)
+    {
+        Eigen::VectorXd control_sample = this->sampleMultivariateNormal(pre_control_input, L);
+        control_array.col(i) = control_sample;
+    }
+
+    return control_array;
 }
