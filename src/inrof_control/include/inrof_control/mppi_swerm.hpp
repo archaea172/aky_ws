@@ -3,7 +3,7 @@
 #include <Eigen/Dense>
 #include <random>
 
-struct MppiParams
+struct MppiSwermParams
 {
     int control_dim_; // 制御入力の次元
     double predict_resolution_;
@@ -12,11 +12,11 @@ struct MppiParams
 
 };
 
-class MppiController
+class MppiSwermController
 {
 public:
-    MppiController();
-    ~MppiController();
+    MppiSwermController();
+    ~MppiSwermController();
 
 private:
     Eigen::VectorXd sampleMultivariateNormal(const Eigen::VectorXd& mean, const Eigen::MatrixXd& L);
@@ -25,6 +25,6 @@ private:
         const Eigen::MatrixXd input_array,
         const Eigen::MatrixXd state_array
     );
-    MppiParams parameters_;
+    MppiSwermParams parameters_;
     std::mt19937 rng_;
 };

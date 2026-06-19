@@ -1,14 +1,14 @@
 #include "mppi_swerm.hpp"
 
-MppiController::MppiController()
+MppiSwermController::MppiSwermController()
 {
 }
 
-MppiController::~MppiController()
+MppiSwermController::~MppiSwermController()
 {
 }
 
-Eigen::VectorXd MppiController::sampleMultivariateNormal(const Eigen::VectorXd& mean, const Eigen::MatrixXd& L)
+Eigen::VectorXd MppiSwermController::sampleMultivariateNormal(const Eigen::VectorXd& mean, const Eigen::MatrixXd& L)
 {
     std::normal_distribution<double> normal(0.0, 1.0);
     Eigen::VectorXd z = Eigen::VectorXd::NullaryExpr(this->parameters_.control_dim_, [&]() {
@@ -18,7 +18,7 @@ Eigen::VectorXd MppiController::sampleMultivariateNormal(const Eigen::VectorXd& 
     return mean + L * z;
 }
 
-Eigen::MatrixXd MppiController::samplingControlArray(const Eigen::VectorXd& pre_control_input)
+Eigen::MatrixXd MppiSwermController::samplingControlArray(const Eigen::VectorXd& pre_control_input)
 {
     Eigen::MatrixXd control_array(this->parameters_.control_dim_, this->parameters_.predict_horizon_);
     Eigen::LLT<Eigen::MatrixXd> llt(this->parameters_.cov);
