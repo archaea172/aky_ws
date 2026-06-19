@@ -21,8 +21,9 @@ public:
 private:
     Eigen::VectorXd sampleMultivariateNormal(const Eigen::VectorXd& mean, const Eigen::MatrixXd& L);
     Eigen::MatrixXd samplingControlArray(const Eigen::VectorXd& pre_control_input);
-    Eigen::MatrixXd calcState(
-        const Eigen::MatrixXd input_array
+    Eigen::MatrixXd PredictState(
+        const Eigen::MatrixXd input_array,
+        const Eigen::MatrixXd state_array
     );
     MppiParams parameters_;
     std::mt19937 rng_;
