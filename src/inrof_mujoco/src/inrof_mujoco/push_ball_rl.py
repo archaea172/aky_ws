@@ -46,6 +46,9 @@ class PushBallEnv(gym.Env):
         self.ball_x_qvel_id = self.model.jnt_dofadr[self.model.joint("ball_x").id]
         self.ball_y_qvel_id = self.model.jnt_dofadr[self.model.joint("ball_y").id]
 
+        self.floor_geom_id = self.model.geom("floor").id
+        self.ball_geom_id = self.model.geom("ball_geom").id
+
         self._robot_pos_matrix = np.empty((2, 1), dtype=np.float64)
         self._robot_vel_matrix = np.empty((2, 1), dtype=np.float64)
         self._pre_robot_pos_matrix = np.empty((2, 1), dtype=np.float64)
@@ -88,6 +91,13 @@ class PushBallEnv(gym.Env):
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
         
+
+        if self.stage >= 5:
+            physics_info = {}
+            physics_info = self._randomize_physics()
+            mujoco.mj_forward(self.model, self.data)
+
+
         mujoco.mj_resetData(self.model, self.data)
         mujoco.mj_forward(self.model, self.data)
         
@@ -291,6 +301,20 @@ class PushBallEnv(gym.Env):
             total_force_world += force_world
 
         return total_force_world
+    
+    def _randomize_physics(self):
+        sliding = self.np_random.uniform(0.5, 3.0)
+        torsional = self.np_random.uniform(0.001, 0.02)
+        rolling = self.np_random.uniform(0.0001, 0.003)
+
+        friction = np.array([sliding, torsional, rolling], dtype=np.float64)
+
+        self.model.geom_friction[self.floor_geom_id] = friction
+        self.model.geom_friction[self.ball_geom_id] = friction
+
+        return {
+            "friction": friction.copy(),
+        }
 
 def run_env_check(xml_path=DEFAULT_XML_PATH):
     from stable_baselines3.common.env_checker import check_env
@@ -390,6 +414,8 @@ def additional_train(
     )
 
     model = PPO.load(str(pre_model_path), env=env, device="cpu")
+    model.learning_rate = 1e-4
+    model.lr_schedule = lambda _: 1e-4
     model.learn(
         total_timesteps=total_timesteps,
         callback=eval_callback,
