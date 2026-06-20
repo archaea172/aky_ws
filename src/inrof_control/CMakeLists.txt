@@ -20,6 +20,7 @@ if(OpenMP_FOUND)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
+find_package(yaml-cpp REQUIRED)
 
 include_directories(
   include
@@ -39,6 +40,7 @@ add_library(mppi_swerm
 )
 target_link_libraries(mppi_swerm
   Eigen3::Eigen
+  yaml-cpp
   swerm_core
 )
 add_executable(debug_node

@@ -1,5 +1,53 @@
 #include "mppi_swerm.hpp"
 #include <chrono>
+#include <filesystem>
+#include <fstream>
+#include <stdexcept>
+#include <vector>
+#include <yaml-cpp/yaml.h>
+
+DistanceFieldMap loadDistanceField(const std::filesystem::path& yaml_path)
+{
+    YAML::Node meta = YAML::LoadFile(yaml_path.string());
+
+    const int width = meta["width"].as<int>();
+    const int height = meta["height"].as<int>();
+    const auto origin = meta["origin"];
+
+    const auto bin_path = yaml_path.parent_path() / meta["data"].as<std::string>();
+
+    std::vector<float> buffer(width * height);
+    std::ifstream bin(bin_path, std::ios::binary);
+    if (!bin) {
+        throw std::runtime_error("failed to open distance field bin: " + bin_path.string());
+    }
+
+    bin.read(
+        reinterpret_cast<char*>(buffer.data()),
+        static_cast<std::streamsize>(buffer.size() * sizeof(float))
+    );
+
+    if (bin.gcount() != static_cast<std::streamsize>(buffer.size() * sizeof(float))) {
+        throw std::runtime_error("invalid distance field bin size: " + bin_path.string());
+    }
+
+    DistanceFieldMap field;
+    field.width = width;
+    field.height = height;
+    field.resolution = meta["resolution"].as<double>();
+    field.origin_x = origin[0].as<double>();
+    field.origin_y = origin[1].as<double>();
+    field.origin_yaw = origin[2].as<double>();
+
+    field.distance = Eigen::ArrayXXf(height, width);
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            field.distance(y, x) = buffer[y * width + x];
+        }
+    }
+
+    return field;
+}
 
 int main(int argc, char *argv[])
 {
@@ -18,6 +66,7 @@ int main(int argc, char *argv[])
     params.boid_parameters.k_alignment = 1.1;
     params.boid_parameters.k_gravity = 0.5;
     params.boid_parameters.k_wall = 0.5;
+    params.boid_parameters.field = loadDistanceField("/home/aky/aky_ws/src/inrof_mujoco/models/maps/wall_distance_field.yaml");
     params.k_follow = 0.5;
 
     MppiSwermController test_controller(params);
