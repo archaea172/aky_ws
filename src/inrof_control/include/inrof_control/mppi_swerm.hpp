@@ -2,6 +2,7 @@
 
 #include <Eigen/Dense>
 #include <random>
+#include <vector>
 #include "swerm/boid_core.hpp"
 #include "swerm/follower_core.hpp"
 
@@ -32,7 +33,7 @@ public:
     Eigen::Matrix<double, 2, Eigen::Dynamic> samplingLeaderVelArray(const Eigen::Vector2d& pre_control_input);
     Eigen::Matrix<double, 2, Eigen::Dynamic> calcLeaderPos(
         const Eigen::Vector2d& now_leader_pos,
-        const Eigen::Matrix<double, 2, Eigen::Dynamic> leader_vel_array
+        const Eigen::Matrix<double, 2, Eigen::Dynamic>& leader_vel_array
     );
     std::vector<SwermState> calcSwermPos(
         const SwermState& x0,

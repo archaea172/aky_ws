@@ -35,7 +35,7 @@ MppiSwermController::samplingLeaderVelArray(const Eigen::Vector2d& pre_control_i
 
 Eigen::Matrix<double, 2, Eigen::Dynamic> MppiSwermController::calcLeaderPos(
     const Eigen::Vector2d& now_leader_pos,
-    const Eigen::Matrix<double, 2, Eigen::Dynamic> leader_vel_array
+    const Eigen::Matrix<double, 2, Eigen::Dynamic>& leader_vel_array
 )
 {
     Eigen::Matrix<double, 2, Eigen::Dynamic> leader_pos_array(2, this->parameters_.predict_horizon + 1);
@@ -55,12 +55,13 @@ std::vector<SwermState> MppiSwermController::calcSwermPos(
 )
 {
     std::vector<SwermState> predict_states;
+    predict_states.reserve(this->parameters_.predict_horizon + 1);
     predict_states.push_back(x0);
 
     for (int i = 0; i < this->parameters_.predict_horizon; ++i)
     {
         SwermState i_swerm_state;
-        Eigen::MatrixXd cmd_vels = 
+        Eigen::MatrixXd cmd_vels =
             this->follower_core_.update_vels(
                 predict_states[i].pose.topRows(2),
                 predict_states[i].vel,
