@@ -4,8 +4,8 @@
 int main(int argc, char *argv[])
 {
     MppiSwermParams params;
-    params.predict_resolution = 0.01;
-    params.predict_horizon = 200;
+    params.predict_resolution = 0.02;
+    params.predict_horizon = 100;
     Eigen::MatrixXd cov(2, 2);
     cov << 1, 0, 0, 1;
     params.cov = cov;
@@ -28,15 +28,22 @@ int main(int argc, char *argv[])
     state.pose = pose;
     state.vel = vel;
     Eigen::Vector2d leader_pos;
-    leader_pos << 2.0, 2.0;
+    leader_pos << 1.0, 1.0;
     std::chrono::system_clock::time_point  start, end; // 型は auto で可
     start = std::chrono::system_clock::now(); // 計測開始時間
     Eigen::Matrix<double, 2, Eigen::Dynamic> leader_vels = test_controller.samplingLeaderVelArray(leader_pos);
-    Eigen::Matrix<double, 2, Eigen::Dynamic> leader_poses = test_controller.calcLeaderPos(leader_pos, leader_vels);
-    std::vector<SwermState> swerm_pos = test_controller.calcSwermPos(state, leader_poses);
+
+    #pragma omp parallel for
+    for (int i = 0; i < params.sample_num; ++i)
+    {
+        Eigen::Matrix<double, 2, Eigen::Dynamic> leader_poses = test_controller.calcLeaderPos(leader_pos, leader_vels);
+        std::vector<SwermState> swerm_pos = test_controller.calcSwermPos(state, leader_poses);
+        double cost = test_controller.calcCost(swerm_pos, leader_pos, leader_pos);
+    }
     end = std::chrono::system_clock::now();  // 計測終了時間
     double elapsed = std::chrono::duration<double, std::milli>(end - start).count();
     
-    printf("%f\r\n", elapsed);
+    printf("time:%f ms\r\n", elapsed);
+    
     return 0;
 }

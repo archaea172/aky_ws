@@ -39,6 +39,11 @@ public:
         const SwermState& x0,
         const Eigen::Matrix<double, 2, Eigen::Dynamic>& leader_pos_array
     );
+    double calcCost(
+        const std::vector<SwermState>& swerm_state,
+        const Eigen::Matrix<double, 2, Eigen::Dynamic>& leader_pos_array,
+        Eigen::Vector2d goal_pos
+    );
 
     Eigen::Matrix2d L;
     const int control_dim_ = 2;

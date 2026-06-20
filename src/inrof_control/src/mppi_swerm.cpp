@@ -75,3 +75,20 @@ std::vector<SwermState> MppiSwermController::calcSwermPos(
 
     return predict_states;
 }
+
+double MppiSwermController::calcCost(
+    const std::vector<SwermState>& swerm_state,
+    const Eigen::Matrix<double, 2, Eigen::Dynamic>& leader_pos_array,
+    Eigen::Vector2d goal_pos
+)
+{
+    static_cast<void>(leader_pos_array);
+
+    double cost = 0.0;
+    for (const SwermState& i_swerm_state : swerm_state)
+    {
+        cost += (i_swerm_state.pose.colwise() - goal_pos).colwise().squaredNorm().sum();
+    }
+
+    return cost;
+}
