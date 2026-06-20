@@ -48,3 +48,29 @@ Eigen::Matrix<double, 2, Eigen::Dynamic> MppiSwermController::calcLeaderPos(
 
     return leader_pos_array;
 }
+
+std::vector<SwermState> MppiSwermController::calcSwermPos(
+    const SwermState& x0,
+    const Eigen::Matrix<double, 2, Eigen::Dynamic>& leader_pos_array
+)
+{
+    std::vector<SwermState> predict_states;
+    predict_states.push_back(x0);
+
+    for (int i = 0; i < this->parameters_.predict_horizon; ++i)
+    {
+        SwermState i_swerm_state;
+        Eigen::MatrixXd cmd_vels = 
+            this->follower_core_.update_vels(
+                predict_states[i].pose.topRows(2),
+                predict_states[i].vel,
+                leader_pos_array.col(i)
+        );
+        i_swerm_state.vel = cmd_vels;
+        i_swerm_state.pose = predict_states[i].pose + cmd_vels * this->parameters_.predict_resolution;
+
+        predict_states.push_back(i_swerm_state);
+    }
+
+    return predict_states;
+}

@@ -15,6 +15,12 @@ struct MppiSwermParams
     double k_follow;
 };
 
+struct SwermState
+{
+    Eigen::Matrix<double, 2, Eigen::Dynamic> pose;
+    Eigen::Matrix<double, 2, Eigen::Dynamic> vel;
+};
+
 class MppiSwermController
 {
 public:
@@ -22,15 +28,20 @@ public:
     ~MppiSwermController();
 
 // private:
+
     Eigen::Matrix<double, 2, Eigen::Dynamic> samplingLeaderVelArray(const Eigen::Vector2d& pre_control_input);
     Eigen::Matrix<double, 2, Eigen::Dynamic> calcLeaderPos(
         const Eigen::Vector2d& now_leader_pos,
         const Eigen::Matrix<double, 2, Eigen::Dynamic> leader_vel_array
     );
+    std::vector<SwermState> calcSwermPos(
+        const SwermState& x0,
+        const Eigen::Matrix<double, 2, Eigen::Dynamic>& leader_pos_array
+    );
 
     Eigen::Matrix2d L;
     const int control_dim_ = 2;
     const MppiSwermParams parameters_;
-    const FollowerCore follower_core_;
+    FollowerCore follower_core_;
     std::mt19937 rng_;
 };
