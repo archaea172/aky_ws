@@ -1,7 +1,7 @@
 #include "mppi_swerm.hpp"
 
 MppiSwermController::MppiSwermController(const MppiSwermParams& parameters)
-: parameters_(parameters)
+: parameters_(parameters), follower_core_(parameters.boid_parameters, parameters.k_follow)
 {
     Eigen::LLT<Eigen::Matrix2d> llt(this->parameters_.cov);
     this->L = llt.matrixL();
@@ -12,7 +12,7 @@ MppiSwermController::~MppiSwermController()
 }
 
 Eigen::Matrix<double, 2, Eigen::Dynamic>
-MppiSwermController::samplingControlArray(const Eigen::Vector2d& pre_control_input)
+MppiSwermController::samplingLeaderVelArray(const Eigen::Vector2d& pre_control_input)
 {
     const int horizon = this->parameters_.predict_horizon;
     std::normal_distribution<double> normal(0.0, 1.0);
@@ -33,10 +33,18 @@ MppiSwermController::samplingControlArray(const Eigen::Vector2d& pre_control_inp
     return control_array;
 }
 
-std::vector<Eigen::MatrixXd> MppiSwermController::PredictState(
-    const Eigen::MatrixXd& input_array,
-    const std::vector<Eigen::MatrixXd>& state_array
+Eigen::Matrix<double, 2, Eigen::Dynamic> MppiSwermController::calcLeaderPos(
+    const Eigen::Vector2d& now_leader_pos,
+    const Eigen::Matrix<double, 2, Eigen::Dynamic> leader_vel_array
 )
 {
+    Eigen::Matrix<double, 2, Eigen::Dynamic> leader_pos_array(2, this->parameters_.predict_horizon + 1);
+    leader_pos_array.col(0) = now_leader_pos;
+    for (int i = 0; i < this->parameters_.predict_horizon; ++i)
+    {
+        Eigen::Vector2d pos = leader_pos_array.col(i) + leader_vel_array.col(i) * this->parameters_.predict_resolution;
+        leader_pos_array.col(i + 1) = pos;
+    }
 
+    return leader_pos_array;
 }

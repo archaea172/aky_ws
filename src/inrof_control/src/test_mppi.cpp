@@ -9,7 +9,6 @@ int main(int argc, char *argv[])
     Eigen::MatrixXd cov(2, 2);
     cov << 1, 0, 0, 1;
     params.cov = cov;
-    params.robot_num = 5;
     params.sample_num = 200;
 
     MppiSwermController test_controller(params);
@@ -19,7 +18,7 @@ int main(int argc, char *argv[])
     Eigen::Vector2d input(2);
     input << 2.0, 2.0;
     // #pragma omp parallel for
-    for (int i = 0; i < params.sample_num; ++i) test_controller.samplingControlArray(input);
+    // for (int i = 0; i < params.sample_num; ++i) test_controller.samplingControlArray(input);
     end = std::chrono::system_clock::now();  // 計測終了時間
     double elapsed = std::chrono::duration<double, std::milli>(end - start).count();
     

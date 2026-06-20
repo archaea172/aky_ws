@@ -39,6 +39,7 @@ add_library(mppi_swerm
 )
 target_link_libraries(mppi_swerm
   Eigen3::Eigen
+  swerm_core
 )
 add_executable(debug_node
   src/test_mppi.cpp
