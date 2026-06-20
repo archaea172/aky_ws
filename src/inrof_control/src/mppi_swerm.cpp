@@ -33,9 +33,9 @@ MppiSwermController::samplingControlArray(const Eigen::Vector2d& pre_control_inp
     return control_array;
 }
 
-Eigen::MatrixXd MppiSwermController::PredictState(
-    const Eigen::MatrixXd input_array,
-    const Eigen::MatrixXd state_array
+std::vector<Eigen::MatrixXd> MppiSwermController::PredictState(
+    const Eigen::MatrixXd& input_array,
+    const std::vector<Eigen::MatrixXd>& state_array
 )
 {
 

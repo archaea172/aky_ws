@@ -26,6 +26,14 @@ include_directories(
   include/${PROJECT_NAME}
 )
 
+add_library(swerm_core
+  src/swerm/boid_core.cpp
+  src/swerm/follower_core.cpp
+)
+target_link_libraries(swerm_core
+  Eigen3::Eigen
+)
+
 add_library(mppi_swerm
   src/mppi_swerm.cpp
 )
