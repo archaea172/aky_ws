@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <vector>
 #include <yaml-cpp/yaml.h>
+#include <iostream>
 
 DistanceFieldMap loadDistanceField(const std::filesystem::path& yaml_path)
 {
@@ -82,21 +83,12 @@ int main(int argc, char *argv[])
     Eigen::VectorXd costs(params.sample_num);
     std::chrono::system_clock::time_point  start, end; // 型は auto で可
     start = std::chrono::system_clock::now(); // 計測開始時間
-
-    // #pragma omp parallel for
-    for (int i = 0; i < params.sample_num; ++i)
-    {
-        Eigen::Matrix<double, 2, Eigen::Dynamic> leader_vels = test_controller.samplingLeaderVelArray(leader_pos);
-        Eigen::Matrix<double, 2, Eigen::Dynamic> leader_poses = test_controller.calcLeaderPos(leader_pos, leader_vels);
-        std::vector<SwermState> swerm_pos = test_controller.calcSwermPos(state, leader_poses);
-        double cost = test_controller.calcCost(swerm_pos, leader_pos, leader_pos);
-        costs(i) = cost;
-    }
-    test_controller.calcWeights(costs);
+    Eigen::Vector2d input = test_controller.controlLoop(state, leader_pos, leader_pos);
     end = std::chrono::system_clock::now();  // 計測終了時間
     double elapsed = std::chrono::duration<double, std::milli>(end - start).count();
     
     printf("time:%f ms\r\n", elapsed);
+    std::cout << input << std::endl;
     
     return 0;
 }

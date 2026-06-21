@@ -30,6 +30,11 @@ class MppiSwermController
 public:
     MppiSwermController(const MppiSwermParams& parameters);
     ~MppiSwermController();
+    Eigen::Vector2d controlLoop(
+        const SwermState& x0,
+        const Eigen::Vector2d& now_leader_pos,
+        const Eigen::Vector2d& goal_pos
+    );
 
 // private:
 

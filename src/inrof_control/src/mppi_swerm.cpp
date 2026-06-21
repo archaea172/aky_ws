@@ -101,3 +101,27 @@ Eigen::VectorXd MppiSwermController::calcWeights(const Eigen::VectorXd& costs)
 
     return weights;
 }
+
+Eigen::Vector2d MppiSwermController::controlLoop(
+    const SwermState& x0,
+    const Eigen::Vector2d& now_leader_pos,
+    const Eigen::Vector2d& goal_pos
+)
+{
+    Eigen::VectorXd costs(this->parameters_.sample_num);
+    Eigen::Matrix<double, 2, Eigen::Dynamic> initial_leader_poses(2, this->parameters_.sample_num);
+    
+    for (int i = 0; i < this->parameters_.sample_num; ++i)
+    {
+        Eigen::Matrix<double, 2, Eigen::Dynamic> leader_vels = this->samplingLeaderVelArray(now_leader_pos);
+        Eigen::Matrix<double, 2, Eigen::Dynamic> leader_poses = this->calcLeaderPos(now_leader_pos, leader_vels);
+        std::vector<SwermState> swerm_pos = this->calcSwermPos(x0, leader_poses);
+        costs(i) = this->calcCost(swerm_pos, leader_poses, goal_pos);
+        initial_leader_poses.col(i) = leader_poses.col(1);
+    }
+    Eigen::VectorXd weights = this->calcWeights(costs);
+    
+    Eigen::Vector2d input = initial_leader_poses * weights;
+
+    return input;
+}
