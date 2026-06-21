@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
     params.boid_parameters.k_alignment = 1.1;
     params.boid_parameters.k_gravity = 0.5;
     params.boid_parameters.k_wall = 0.5;
-    params.boid_parameters.field = loadDistanceField("/home/aky/aky_ws/src/inrof_control/maps/irc_distance_field.yaml");
+    params.boid_parameters.field = loadDistanceField("src/inrof_control/maps/irc_distance_field.yaml");
     params.k_follow = 0.5;
 
     MppiSwermController test_controller(params);
