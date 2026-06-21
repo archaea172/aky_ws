@@ -12,6 +12,9 @@ struct MppiSwermParams
     int predict_horizon;
     int sample_num;
     Eigen::Matrix2d cov;
+    double lambda;
+    double gamma;
+
     BoidPrams boid_parameters;
     double k_follow;
 };
@@ -44,6 +47,7 @@ public:
         const Eigen::Matrix<double, 2, Eigen::Dynamic>& leader_pos_array,
         Eigen::Vector2d goal_pos
     );
+    Eigen::VectorXd calcWeights(const Eigen::VectorXd& costs);
 
     Eigen::Matrix2d L;
     const int control_dim_ = 2;

@@ -92,3 +92,12 @@ double MppiSwermController::calcCost(
 
     return cost;
 }
+
+Eigen::VectorXd MppiSwermController::calcWeights(const Eigen::VectorXd& costs)
+{
+    double rho = costs.minCoeff();
+    Eigen::VectorXd weights = (-(costs.array() - rho) / this->parameters_.lambda).exp().matrix();
+    weights /= weights.sum();
+
+    return weights;
+}
