@@ -1,0 +1,11 @@
+format: inrof_distance_field
+version: 1
+
+data: irc_distance_field.bin
+dtype: float32
+width: 181
+height: 231
+resolution: 0.01
+origin: [-0.512, 0.012, -1.5708]
+unit: meter
+signed: false
