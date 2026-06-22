@@ -1,10 +1,10 @@
 #include "mppi_swerm.hpp"
 
-MppiSwermController::MppiSwermController(const MppiSwermParams& parameters)
-: parameters_(parameters), follower_core_(parameters.boid_parameters, parameters.k_follow)
+MppiSwermController::MppiSwermController(const MppiSwermParams& parameters, const Eigen::Vector2d& goal_pos)
+: parameters_(parameters), follower_core_(parameters.boid_parameters, parameters.k_follow), goal_pos_(goal_pos)
 {
     Eigen::LLT<Eigen::Matrix2d> llt(this->parameters_.cov);
-    this->L = llt.matrixL();
+    this->L = llt.matrixL(); 
 }
 
 MppiSwermController::~MppiSwermController()
@@ -78,8 +78,7 @@ std::vector<SwermState> MppiSwermController::calcSwermPos(
 
 double MppiSwermController::calcCost(
     const std::vector<SwermState>& swerm_state,
-    const Eigen::Matrix<double, 2, Eigen::Dynamic>& leader_pos_array,
-    Eigen::Vector2d goal_pos
+    const Eigen::Matrix<double, 2, Eigen::Dynamic>& leader_pos_array
 )
 {
     static_cast<void>(leader_pos_array);
@@ -87,7 +86,7 @@ double MppiSwermController::calcCost(
     double cost = 0.0;
     for (const SwermState& i_swerm_state : swerm_state)
     {
-        cost += (i_swerm_state.pose.colwise() - goal_pos).colwise().squaredNorm().sum();
+        cost += (i_swerm_state.pose.colwise() - this->goal_pos_).colwise().squaredNorm().sum();
     }
 
     return cost;
@@ -104,24 +103,35 @@ Eigen::VectorXd MppiSwermController::calcWeights(const Eigen::VectorXd& costs)
 
 Eigen::Vector2d MppiSwermController::controlLoop(
     const SwermState& x0,
-    const Eigen::Vector2d& now_leader_pos,
-    const Eigen::Vector2d& goal_pos
+    const Eigen::Vector2d& now_leader_pos
 )
 {
+    if (!is_start_)
+    {
+        Eigen::Vector2d dir = this->goal_pos_ - now_leader_pos;
+
+        if (dir.norm() > 1e-6) {
+            this->pre_leader_vel_ = 4 * dir.normalized();
+        }
+        is_start_ = true;
+        std::cout << "starting!!"  << std::endl;
+    }
     Eigen::VectorXd costs(this->parameters_.sample_num);
-    Eigen::Matrix<double, 2, Eigen::Dynamic> initial_leader_poses(2, this->parameters_.sample_num);
-    
+    Eigen::Matrix<double, 2, Eigen::Dynamic> initial_leader_vel(2, this->parameters_.sample_num);
+
     for (int i = 0; i < this->parameters_.sample_num; ++i)
     {
-        Eigen::Matrix<double, 2, Eigen::Dynamic> leader_vels = this->samplingLeaderVelArray(now_leader_pos);
+        Eigen::Matrix<double, 2, Eigen::Dynamic> leader_vels = this->samplingLeaderVelArray(this->pre_leader_vel_);
         Eigen::Matrix<double, 2, Eigen::Dynamic> leader_poses = this->calcLeaderPos(now_leader_pos, leader_vels);
         std::vector<SwermState> swerm_pos = this->calcSwermPos(x0, leader_poses);
-        costs(i) = this->calcCost(swerm_pos, leader_poses, goal_pos);
-        initial_leader_poses.col(i) = leader_poses.col(1);
+        costs(i) = this->calcCost(swerm_pos, leader_poses);
+        initial_leader_vel.col(i) = leader_vels.col(0);
     }
     Eigen::VectorXd weights = this->calcWeights(costs);
     
-    Eigen::Vector2d input = initial_leader_poses * weights;
+    Eigen::Vector2d leader_vel = initial_leader_vel * weights;
+    Eigen::Vector2d input = now_leader_pos + leader_vel * 1 / this->parameters_.control_frequency;
+    this->pre_leader_vel_ = leader_vel;
 
     return input;
 }

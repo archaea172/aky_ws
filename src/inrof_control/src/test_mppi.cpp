@@ -53,6 +53,7 @@ DistanceFieldMap loadDistanceField(const std::filesystem::path& yaml_path)
 int main(int argc, char *argv[])
 {
     MppiSwermParams params;
+    params.control_frequency = 50;
     params.predict_resolution = 0.02;
     params.predict_horizon = 100;
     Eigen::MatrixXd cov(2, 2);
@@ -71,7 +72,9 @@ int main(int argc, char *argv[])
     params.boid_parameters.field = loadDistanceField("src/inrof_control/maps/irc_distance_field.yaml");
     params.k_follow = 0.5;
 
-    MppiSwermController test_controller(params);
+    Eigen::Vector2d goal_pos;
+    goal_pos << 4.0, 4.0;
+    MppiSwermController test_controller(params, goal_pos);
 
     SwermState state;
     Eigen::MatrixXd pose = Eigen::MatrixXd::Zero(2, 5);
@@ -83,7 +86,9 @@ int main(int argc, char *argv[])
     Eigen::VectorXd costs(params.sample_num);
     std::chrono::system_clock::time_point  start, end; // 型は auto で可
     start = std::chrono::system_clock::now(); // 計測開始時間
-    Eigen::Vector2d input = test_controller.controlLoop(state, leader_pos, leader_pos);
+    Eigen::Vector2d input = test_controller.controlLoop(state, leader_pos);
+    input = test_controller.controlLoop(state, leader_pos);
+    input = test_controller.controlLoop(state, leader_pos);
     end = std::chrono::system_clock::now();  // 計測終了時間
     double elapsed = std::chrono::duration<double, std::milli>(end - start).count();
     
