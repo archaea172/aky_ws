@@ -61,6 +61,7 @@ int main(int argc, char *argv[])
     params.cov = cov;
     params.sample_num = 200;
     params.lambda = 5.0;
+    params.max_v = 0.5;
     params.boid_parameters.boid_num = 5;
     params.boid_parameters.max_vel = 0.05;
     params.boid_parameters.Ir = 100.0;

@@ -30,6 +30,15 @@ MppiSwermController::samplingLeaderVelArray(const Eigen::Vector2d& pre_control_i
     control_array.noalias() = this->L * z;
     control_array.colwise() += pre_control_input;
 
+    for (int i = 0; i < horizon; ++i)
+    {
+        const double norm = control_array.col(i).norm();
+        if (norm > this->parameters_.max_v)
+        {
+            control_array.col(i) *= this->parameters_.max_v / norm;
+        }
+    }
+
     return control_array;
 }
 
