@@ -86,6 +86,25 @@ install(
   DESTINATION lib/${PROJECT_NAME}
 )
 
+add_executable(leader_pos_server_mppi
+  src/leader_pos_server.cpp
+)
+ament_target_dependencies(leader_pos_server_mppi
+  rclcpp
+  rclcpp_action
+  swerm_msgs
+  nav_msgs
+  geometry_msgs
+)
+target_link_libraries(path_generate_server
+  Eigen3::Eigen
+  mppi_swerm
+)
+install(
+  TARGETS leader_pos_server_mppi
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 install(
   DIRECTORY models
   DESTINATION share/${PROJECT_NAME}

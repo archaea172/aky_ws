@@ -1,4 +1,4 @@
-#include "leader_pos_server.hpp"
+#include "leader_pos_server_mppi.hpp"
 
 using namespace std::chrono_literals;
 using namespace std::placeholders;
@@ -10,10 +10,31 @@ publish_rate_ms(50)
     rclcpp::QoS device = rclcpp::QoS(rclcpp::KeepLast(10))
         .reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE)
         .durability(RMW_QOS_POLICY_DURABILITY_VOLATILE);
+    rclcpp::QoS map_qos = rclcpp::QoS(rclcpp::KeepLast(1))
+        .reliable()
+        .transient_local();
+
     this->leader_odom_publisher_ = this->create_publisher<nav_msgs::msg::Odometry>(
         "leader/odometry",
         device
     );
+    this->map_subscriber_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
+        "map",
+        map_qos,
+        std::bind(&LeaderPosServer::map_callback, this, std::placeholders::_1)
+    );
+    for (int i = 0; i < 5; ++i)
+    {
+        this->odom_subscribers_.push_back(
+            this->create_subscription<nav_msgs::msg::Odometry>(
+                "robot_" + std::to_string(i) + "/odometry",
+                device,
+                [this, i](nav_msgs::msg::Odometry::ConstSharedPtr rxdata) {
+                    this->odom_callback(i, rxdata);
+                }
+            )
+        );
+    }
 
     this->action_server_ = rclcpp_action::create_server<swerm_msgs::action::LeaderPos>(
         this,
@@ -59,29 +80,6 @@ void LeaderPosServer::execute(const std::shared_ptr<GoalHandleLeaderPos> goal_ha
     const std::shared_ptr<const swerm_msgs::action::LeaderPos_Goal> goal = goal_handle->get_goal();
     swerm_msgs::action::LeaderPos::Result::SharedPtr result = std::make_shared<swerm_msgs::action::LeaderPos::Result>();
 
-    double one_cycle_distance = goal->max_speed * publish_rate_ms / 1000.0;
-
-    rclcpp::Client<swerm_msgs::srv::LeaderPath>::SharedPtr path_client = this->create_client<swerm_msgs::srv::LeaderPath>(
-        "leader_path_service"
-    );
-    swerm_msgs::srv::LeaderPath::Request::SharedPtr request = std::make_shared<swerm_msgs::srv::LeaderPath::Request>();
-    request->start_pos = goal->start_pos;
-    request->goal_pos = goal->goal_pos;
-    request->waypoints = goal->waypoints;
-    request->resolution = one_cycle_distance;
-
-    auto future = path_client->async_send_request(request);
-    while (rclcpp::ok() && future.wait_for(10ms) != std::future_status::ready)
-    {
-        if (goal_handle->is_canceling())
-        {
-            result->success = false;
-            result->msg = "goal canceled";
-            goal_handle->canceled(result);
-            return;
-        }
-    }
-
     if (!rclcpp::ok())
     {
         result->success = false;
@@ -90,21 +88,19 @@ void LeaderPosServer::execute(const std::shared_ptr<GoalHandleLeaderPos> goal_ha
         return;
     }
 
-    const auto response = future.get();
-    if (!response || response->route.poses.empty()) 
-    {
-            result->success = false;
-            result->msg = "path plan failed";
-            goal_handle->canceled(result);
-            return;
-    }
-
     const auto publish_period = rclcpp::Duration::from_seconds(publish_rate_ms / 1000.0);
     auto clock = this->get_clock();
     auto next_publish_time = clock->now();
 
     nav_msgs::msg::Odometry txdata;
+    Eigen::Vector2d leader_pos;
+    leader_pos << goal->start_pos.pose.position.x, goal->start_pos.pose.position.y;
+    Eigen::Vector2d goal_pos;
+    goal_pos << goal->goal_pos.pose.position.x, goal->goal_pos.pose.position.y;
     size_t i = 0;
+
+    MppiSwermParams mppi_parameter;
+    this->mppi_controller_ = std::make_unique<MppiSwermController>(mppi_parameter, goal_pos);
 
     while (rclcpp::ok())
     {
@@ -116,10 +112,14 @@ void LeaderPosServer::execute(const std::shared_ptr<GoalHandleLeaderPos> goal_ha
             return;
         }
 
-        txdata.header = response->route.poses[i].header;
+        txdata.header = goal->goal_pos.header;
         txdata.header.stamp = clock->now();
 
-        
+        leader_pos = this->mppi_controller_->controlLoop(this->swerm_states, leader_pos);
+        txdata.pose.pose.position.x = leader_pos(0);
+        txdata.pose.pose.position.y = leader_pos(1);
+
+        this->leader_odom_publisher_->publish(txdata);
         
         next_publish_time = next_publish_time + publish_period;
         if (!clock->sleep_until(
@@ -143,6 +143,40 @@ bool LeaderPosServer::is_out_of_map(geometry_msgs::msg::PoseStamped start_pos, g
     static_cast<void>(start_pos);
     static_cast<void>(goal_pos);
     return false;
+}
+
+void LeaderPosServer::odom_callback(int id, nav_msgs::msg::Odometry::ConstSharedPtr rxdata)
+{
+    if (id < 0)
+    {
+        RCLCPP_ERROR(this->get_logger(), "id is invalid. please check robot num");
+        return;
+    }
+
+    this->swerm_states.pose.col(id) << rxdata->pose.pose.position.x, rxdata->pose.pose.position.y;
+    this->swerm_states.vel.col(id) << rxdata->twist.twist.linear.x, rxdata->twist.twist.linear.y;
+}
+
+void LeaderPosServer::map_callback(nav_msgs::msg::OccupancyGrid::ConstSharedPtr rxdata)
+{
+    if (this->subscribe_map_) return;
+    this->subscribe_map_ = true;
+    GridMap map;
+    map.height = rxdata->info.height;
+    map.width = rxdata->info.width;
+    map.origin_x = rxdata->info.origin.position.x;
+    map.origin_y = rxdata->info.origin.position.y;
+    const auto &orientation = rxdata->info.origin.orientation;
+    map.origin_yaw = std::atan2(
+        2.0 * (orientation.w * orientation.z + orientation.x * orientation.y),
+        1.0 - 2.0 * (orientation.y * orientation.y + orientation.z * orientation.z)
+    );
+    map.resolution = rxdata->info.resolution;
+    map.data = rxdata->data;
+
+    DistanceFieldMap field = convertmap_grid_to_distance(map);
+
+    this->field_ = field;
 }
 
 int main(int argc, char *argv[])
