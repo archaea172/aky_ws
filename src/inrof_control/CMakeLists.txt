@@ -87,7 +87,7 @@ install(
 )
 
 add_executable(leader_pos_server_mppi
-  src/leader_pos_server.cpp
+  src/leader_pos_server_mppi.cpp
 )
 ament_target_dependencies(leader_pos_server_mppi
   rclcpp
@@ -96,7 +96,7 @@ ament_target_dependencies(leader_pos_server_mppi
   nav_msgs
   geometry_msgs
 )
-target_link_libraries(path_generate_server
+target_link_libraries(leader_pos_server_mppi
   Eigen3::Eigen
   mppi_swerm
 )

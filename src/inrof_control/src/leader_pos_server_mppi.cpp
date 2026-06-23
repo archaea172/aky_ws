@@ -7,6 +7,24 @@ LeaderPosServer::LeaderPosServer()
 : rclcpp::Node("leader_pos_server"),
 publish_rate_ms(50)
 {
+    this->declare_parameter<double>("mppi.control_frequency", 50.0);
+    this->declare_parameter<double>("mppi.predict_resolution", 0.02);
+    this->declare_parameter<int>("mppi.predict_horizon", 100);
+    this->declare_parameter<int>("mppi.sample_num", 200);
+    this->declare_parameter<std::vector<double>>("mppi.covariance", {1.0, 0.0, 0.0, 1.0});
+    this->declare_parameter<double>("mppi.lambda", 5.0);
+    this->declare_parameter<double>("mppi.gamma", 0.0);
+    this->declare_parameter<double>("mppi.max_v", 0.5);
+    this->declare_parameter<int>("mppi.boid.boid_num", 5);
+    this->declare_parameter<double>("mppi.boid.max_vel", 0.05);
+    this->declare_parameter<double>("mppi.boid.ir", 100.0);
+    this->declare_parameter<double>("mppi.boid.ir_min", 0.01);
+    this->declare_parameter<double>("mppi.boid.k_separation", 20.0);
+    this->declare_parameter<double>("mppi.boid.k_alignment", 1.1);
+    this->declare_parameter<double>("mppi.boid.k_gravity", 0.5);
+    this->declare_parameter<double>("mppi.boid.k_wall", 0.5);
+    this->declare_parameter<double>("mppi.k_follow", 0.5);
+
     rclcpp::QoS device = rclcpp::QoS(rclcpp::KeepLast(10))
         .reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE)
         .durability(RMW_QOS_POLICY_DURABILITY_VOLATILE);
@@ -97,9 +115,37 @@ void LeaderPosServer::execute(const std::shared_ptr<GoalHandleLeaderPos> goal_ha
     leader_pos << goal->start_pos.pose.position.x, goal->start_pos.pose.position.y;
     Eigen::Vector2d goal_pos;
     goal_pos << goal->goal_pos.pose.position.x, goal->goal_pos.pose.position.y;
-    size_t i = 0;
 
     MppiSwermParams mppi_parameter;
+    mppi_parameter.control_frequency = this->get_parameter("mppi.control_frequency").as_double();
+    mppi_parameter.predict_resolution = this->get_parameter("mppi.predict_resolution").as_double();
+    mppi_parameter.predict_horizon = static_cast<int>(this->get_parameter("mppi.predict_horizon").as_int());
+    mppi_parameter.sample_num = static_cast<int>(this->get_parameter("mppi.sample_num").as_int());
+
+    const auto covariance = this->get_parameter("mppi.covariance").as_double_array();
+    if (covariance.size() != 4)
+    {
+        result->success = false;
+        result->msg = "mppi.covariance must have 4 elements";
+        goal_handle->abort(result);
+        return;
+    }
+    mppi_parameter.cov << covariance[0], covariance[1], covariance[2], covariance[3];
+
+    mppi_parameter.lambda = this->get_parameter("mppi.lambda").as_double();
+    mppi_parameter.gamma = this->get_parameter("mppi.gamma").as_double();
+    mppi_parameter.max_v = this->get_parameter("mppi.max_v").as_double();
+    mppi_parameter.boid_parameters.boid_num = static_cast<int>(this->get_parameter("mppi.boid.boid_num").as_int());
+    mppi_parameter.boid_parameters.max_vel = this->get_parameter("mppi.boid.max_vel").as_double();
+    mppi_parameter.boid_parameters.Ir = this->get_parameter("mppi.boid.ir").as_double();
+    mppi_parameter.boid_parameters.Ir_min = this->get_parameter("mppi.boid.ir_min").as_double();
+    mppi_parameter.boid_parameters.k_separation = this->get_parameter("mppi.boid.k_separation").as_double();
+    mppi_parameter.boid_parameters.k_alignment = this->get_parameter("mppi.boid.k_alignment").as_double();
+    mppi_parameter.boid_parameters.k_gravity = this->get_parameter("mppi.boid.k_gravity").as_double();
+    mppi_parameter.boid_parameters.k_wall = this->get_parameter("mppi.boid.k_wall").as_double();
+    mppi_parameter.boid_parameters.field = this->field_;
+    mppi_parameter.k_follow = this->get_parameter("mppi.k_follow").as_double();
+
     this->mppi_controller_ = std::make_unique<MppiSwermController>(mppi_parameter, goal_pos);
 
     while (rclcpp::ok())
