@@ -21,6 +21,7 @@ if(OpenMP_FOUND)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 find_package(yaml-cpp REQUIRED)
+find_package(backward_ros REQUIRED)
 
 include_directories(
   include

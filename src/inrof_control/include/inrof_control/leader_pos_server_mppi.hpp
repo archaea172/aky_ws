@@ -47,6 +47,7 @@ private:
     SwermState swerm_states;
     DistanceFieldMap field_;
     bool subscribe_map_{false};
+    int boid_num_{0};
 
     double publish_rate_ms;
 };

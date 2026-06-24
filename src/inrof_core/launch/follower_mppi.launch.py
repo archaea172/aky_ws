@@ -1,0 +1,66 @@
+import os
+
+from launch import LaunchDescription
+from launch.substitutions import LaunchConfiguration
+from launch.actions import DeclareLaunchArgument
+from launch_ros.actions import Node
+from ament_index_python.packages import get_package_share_directory
+
+def generate_launch_description():
+    ld = LaunchDescription()
+    use_sim_time = LaunchConfiguration('use_sim_time')
+    ld.add_action(DeclareLaunchArgument(
+        'use_sim_time',
+        default_value='false',
+        description='Use simulation (Gazebo) clock if true'
+    ))
+
+    # Load parameters for follower and map server
+    follower_param = os.path.join(
+        get_package_share_directory('inrof_swerm'),
+        'config',
+        'follower.yaml'
+    )
+
+    follower_node = Node(
+        package='inrof_swerm',
+        executable='follower_node',
+        name='follower_node',
+        parameters=[
+            follower_param,
+            {'use_sim_time': use_sim_time}
+        ]
+    )
+    ld.add_action(follower_node)
+
+    leader_pos_server_node = Node(
+        package='inrof_control',
+        executable='leader_pos_server_mppi',
+        name='leader_pos_server_mppi',
+        parameters=[
+            {'use_sim_time': use_sim_time}
+        ]
+    )
+    ld.add_action(leader_pos_server_node)
+
+    lifecycle_server_node = Node(
+        package='inrof_bt',
+        executable='lifecycle_server',
+        name='lifecycle_server',
+        parameters=[
+            {'use_sim_time': use_sim_time}
+        ]
+    )
+    ld.add_action(lifecycle_server_node)
+
+    bt_node = Node(
+        package='inrof_bt',
+        executable='inrof_bt_node',
+        name='inrof_bt_node',
+        parameters=[
+            {'use_sim_time': use_sim_time}
+        ]
+    )
+    ld.add_action(bt_node)
+
+    return ld

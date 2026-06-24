@@ -31,6 +31,9 @@ publish_rate_ms(50)
     rclcpp::QoS map_qos = rclcpp::QoS(rclcpp::KeepLast(1))
         .reliable()
         .transient_local();
+    this->boid_num_ = static_cast<int>(this->get_parameter("mppi.boid.boid_num").as_int());
+    this->swerm_states.pose = Eigen::Matrix<double, 2, Eigen::Dynamic>::Zero(2, this->boid_num_);
+    this->swerm_states.vel = Eigen::Matrix<double, 2, Eigen::Dynamic>::Zero(2, this->boid_num_);
 
     this->leader_odom_publisher_ = this->create_publisher<nav_msgs::msg::Odometry>(
         "leader/odometry",
@@ -41,7 +44,7 @@ publish_rate_ms(50)
         map_qos,
         std::bind(&LeaderPosServer::map_callback, this, std::placeholders::_1)
     );
-    for (int i = 0; i < 5; ++i)
+    for (int i = 0; i < this->boid_num_; ++i)
     {
         this->odom_subscribers_.push_back(
             this->create_subscription<nav_msgs::msg::Odometry>(
@@ -135,7 +138,7 @@ void LeaderPosServer::execute(const std::shared_ptr<GoalHandleLeaderPos> goal_ha
     mppi_parameter.lambda = this->get_parameter("mppi.lambda").as_double();
     mppi_parameter.gamma = this->get_parameter("mppi.gamma").as_double();
     mppi_parameter.max_v = this->get_parameter("mppi.max_v").as_double();
-    mppi_parameter.boid_parameters.boid_num = static_cast<int>(this->get_parameter("mppi.boid.boid_num").as_int());
+    mppi_parameter.boid_parameters.boid_num = this->boid_num_;
     mppi_parameter.boid_parameters.max_vel = this->get_parameter("mppi.boid.max_vel").as_double();
     mppi_parameter.boid_parameters.Ir = this->get_parameter("mppi.boid.ir").as_double();
     mppi_parameter.boid_parameters.Ir_min = this->get_parameter("mppi.boid.ir_min").as_double();
@@ -193,7 +196,7 @@ bool LeaderPosServer::is_out_of_map(geometry_msgs::msg::PoseStamped start_pos, g
 
 void LeaderPosServer::odom_callback(int id, nav_msgs::msg::Odometry::ConstSharedPtr rxdata)
 {
-    if (id < 0)
+    if (id < 0 || id >= this->boid_num_)
     {
         RCLCPP_ERROR(this->get_logger(), "id is invalid. please check robot num");
         return;
