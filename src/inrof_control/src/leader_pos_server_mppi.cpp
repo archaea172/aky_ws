@@ -17,7 +17,7 @@ publish_rate_ms(50)
     this->declare_parameter<double>("mppi.max_v", 1.5);
     this->declare_parameter<double>("mppi.weights.w_goal", 1.0);
     this->declare_parameter<double>("mppi.weights.w_leader_goal", 1.0);
-    this->declare_parameter<double>("mppi.weights.w_linear", 100.0);
+    this->declare_parameter<double>("mppi.weights.w_linear", 10.0);
     this->declare_parameter<int>("mppi.boid.boid_num", 5);
     this->declare_parameter<double>("mppi.boid.max_vel", 0.05);
     this->declare_parameter<double>("mppi.boid.ir", 100.0);

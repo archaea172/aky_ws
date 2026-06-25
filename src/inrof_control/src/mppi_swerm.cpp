@@ -97,7 +97,7 @@ double MppiSwermController::calcCost(
     for (const SwermState& i_swerm_state : swerm_state)
     {
         // 各ロボットがゴールまで近づいているか
-        cost += this->parameters_.weights.w_goal * (i_swerm_state.pose.colwise() - this->goal_pos_).colwise().squaredNorm().sum();
+        cost += this->parameters_.weights.w_goal * (i_swerm_state.pose.colwise() - this->goal_pos_).colwise().squaredNorm().mean();
 
         // 直線状にしたい
         const Eigen::MatrixXd pose = i_swerm_state.pose;
@@ -141,7 +141,7 @@ double MppiSwermController::calcCost(
             }
             else
             {
-                cost += 1.0;
+                cost += this->parameters_.weights.w_linear * 1.0;
             }
         }
     }
