@@ -17,6 +17,7 @@ publish_rate_ms(50)
     this->declare_parameter<double>("mppi.max_v", 1.5);
     this->declare_parameter<double>("mppi.weights.w_goal", 1.0);
     this->declare_parameter<double>("mppi.weights.w_leader_goal", 1.0);
+    this->declare_parameter<double>("mppi.weights.w_linear", 100.0);
     this->declare_parameter<int>("mppi.boid.boid_num", 5);
     this->declare_parameter<double>("mppi.boid.max_vel", 0.05);
     this->declare_parameter<double>("mppi.boid.ir", 100.0);
@@ -147,6 +148,7 @@ void LeaderPosServer::execute(const std::shared_ptr<GoalHandleLeaderPos> goal_ha
     mppi_parameter.max_v = this->get_parameter("mppi.max_v").as_double();
     mppi_parameter.weights.w_goal = this->get_parameter("mppi.weights.w_goal").as_double();
     mppi_parameter.weights.w_leader_goal = this->get_parameter("mppi.weights.w_leader_goal").as_double();
+    mppi_parameter.weights.w_linear = this->get_parameter("mppi.weights.w_linear").as_double();
     mppi_parameter.boid_parameters.boid_num = this->boid_num_;
     mppi_parameter.boid_parameters.max_vel = this->get_parameter("mppi.boid.max_vel").as_double();
     mppi_parameter.boid_parameters.Ir = this->get_parameter("mppi.boid.ir").as_double();

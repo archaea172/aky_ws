@@ -11,6 +11,7 @@ struct MppiWeights
 {
     double w_goal;
     double w_leader_goal;
+    double w_linear;
 };
 
 struct MppiSwermParams

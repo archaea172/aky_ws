@@ -88,8 +88,6 @@ int main(int argc, char *argv[])
     std::chrono::system_clock::time_point  start, end; // 型は auto で可
     start = std::chrono::system_clock::now(); // 計測開始時間
     Eigen::Vector2d input = test_controller.controlLoop(state, leader_pos);
-    input = test_controller.controlLoop(state, leader_pos);
-    input = test_controller.controlLoop(state, leader_pos);
     end = std::chrono::system_clock::now();  // 計測終了時間
     double elapsed = std::chrono::duration<double, std::milli>(end - start).count();
     

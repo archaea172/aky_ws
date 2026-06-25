@@ -93,11 +93,61 @@ double MppiSwermController::calcCost(
     static_cast<void>(leader_pos_array);
 
     double cost = 0.0;
+
     for (const SwermState& i_swerm_state : swerm_state)
     {
+        // 各ロボットがゴールまで近づいているか
         cost += this->parameters_.weights.w_goal * (i_swerm_state.pose.colwise() - this->goal_pos_).colwise().squaredNorm().sum();
+
+        // 直線状にしたい
+        const Eigen::MatrixXd pose = i_swerm_state.pose;
+        const int n = pose.cols();
+        if (n >= 2)
+        {
+            double sum_x = 0.0;
+            double sum_y = 0.0;
+            double sum_xx = 0.0;
+            double sum_yy = 0.0;
+            double sum_xy = 0.0;
+
+            for (int i = 0; i < n; ++i)
+            {
+                const double x = pose(0, i);
+                const double y = pose(1, i);
+
+                sum_x += x;
+                sum_y += y;
+                sum_xx += x * x;
+                sum_yy += y * y;
+                sum_xy += x * y;
+            }
+
+            const double inv_n = 1.0 / static_cast<double>(n);
+            const double sxx = sum_xx - sum_x * sum_x * inv_n;
+            const double syy = sum_yy - sum_y * sum_y * inv_n;
+            const double sxy = sum_xy - sum_x * sum_y * inv_n;
+
+            const double trace = sxx + syy;
+
+            if (trace > 1e-9)
+            {
+                const double diff = sxx - syy;
+                const double discriminant = std::sqrt(diff * diff + 4.0 * sxy * sxy);
+                const double line_score = (trace + discriminant) / (2.0 * trace);
+
+                cost += this->parameters_.weights.w_linear * (1.0 - line_score);
+                // 既存と同じ -log 系にしたいなら:
+                // cost += -std::log(line_score + 1e-9);
+            }
+            else
+            {
+                cost += 1.0;
+            }
+        }
     }
-    cost += this->parameters_.weights.w_leader_goal * (leader_pos_array.col(leader_pos_array.cols() - 1) - this->goal_pos_).squaredNorm();;
+    // リーダーがゴールまで近づいているか
+    cost += this->parameters_.weights.w_leader_goal * (leader_pos_array.col(leader_pos_array.cols() - 1) - this->goal_pos_).squaredNorm();
+    
 
     return cost;
 }
