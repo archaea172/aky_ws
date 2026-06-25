@@ -14,7 +14,7 @@ publish_rate_ms(50)
     this->declare_parameter<std::vector<double>>("mppi.covariance", {1.0, 0.0, 0.0, 1.0});
     this->declare_parameter<double>("mppi.lambda", 5.0);
     this->declare_parameter<double>("mppi.gamma", 0.0);
-    this->declare_parameter<double>("mppi.max_v", 0.5);
+    this->declare_parameter<double>("mppi.max_v", 1.5);
     this->declare_parameter<double>("mppi.weights.w_goal", 1.0);
     this->declare_parameter<double>("mppi.weights.w_leader_goal", 1.0);
     this->declare_parameter<int>("mppi.boid.boid_num", 5);
