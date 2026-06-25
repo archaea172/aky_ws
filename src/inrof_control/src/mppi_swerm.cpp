@@ -95,8 +95,9 @@ double MppiSwermController::calcCost(
     double cost = 0.0;
     for (const SwermState& i_swerm_state : swerm_state)
     {
-        cost += (i_swerm_state.pose.colwise() - this->goal_pos_).colwise().squaredNorm().sum();
+        cost += this->parameters_.weights.w_goal * (i_swerm_state.pose.colwise() - this->goal_pos_).colwise().squaredNorm().sum();
     }
+    cost += this->parameters_.weights.w_leader_goal * (leader_pos_array.col(leader_pos_array.cols() - 1) - this->goal_pos_).squaredNorm();;
 
     return cost;
 }

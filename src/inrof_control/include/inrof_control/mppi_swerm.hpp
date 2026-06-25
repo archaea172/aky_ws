@@ -7,6 +7,12 @@
 #include "swerm/boid_core.hpp"
 #include "swerm/follower_core.hpp"
 
+struct MppiWeights
+{
+    double w_goal;
+    double w_leader_goal;
+};
+
 struct MppiSwermParams
 {
     double control_frequency; // hz
@@ -17,6 +23,7 @@ struct MppiSwermParams
     double lambda;
     double gamma;
     double max_v;
+    MppiWeights weights;
 
     BoidPrams boid_parameters;
     double k_follow;
